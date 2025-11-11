@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+  <meta http-equiv="Pragma" content="no-cache"/>
+  <meta http-equiv="Expires" content="0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Health & Wellness Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <link rel="stylesheet" href="assets/style.css?v=1.0"/>
+</head>
+<body>
+  <h1>Health Wellness Dashboard</h1>
+  <div id="loadStatus" class="small">Loading data…</div>
+  <div class="tabs">
+    <button class="tab-button active" onclick="openTab('current')">Current Data</button>
+    <button class="tab-button" onclick="openTab('clubInsights')">Club Insights</button>
+    <button class="tab-button" onclick="openTab('employerPaid')">Employer Paid</button>
+    <button class="tab-button" onclick="openTab('active')">Active Partners</button>
+    <button class="tab-button" onclick="openTab('pending')">Pending Inquiries</button>
+    <button class="tab-button" onclick="openTab('changelog')">Changelog</button>
+  </div>
+  <script src="assets/dashboard.js?v=1.0"></script>
+</body>
+</html>
