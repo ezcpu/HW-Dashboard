@@ -1,4 +1,0 @@
-:root { --bg:#ffffff; --text:#0f172a; }
-body { background:var(--bg); color:var(--text); font-family:'Plus Jakarta Sans',sans-serif; padding:24px; }
-.tab-button{margin-right:8px;padding:8px 12px;border-radius:6px;cursor:pointer;}
-.tab-button.active{background:#2563eb;color:#fff;}
