@@ -133,9 +133,10 @@ function renderPartners() {
 
       const payColor = type => {
         const t = type.toLowerCase();
-        if (t.includes("employee paid")) return "#2563eb";
-        if (t.includes("employee reimbursement")) return "#f59e0b";
-        if (t.includes("company paid")) return "#10b981";
+        // Updated colors to match CSS variables
+        if (t.includes("employee paid")) return "#3b82f6"; // var(--primary)
+        if (t.includes("employee reimbursement")) return "#f59e0b"; // var(--warn)
+        if (t.includes("company paid")) return "#10b981"; // var(--accent)
         return palette.accent;
       };
 
@@ -169,4 +170,3 @@ function renderPartners() {
     }
   });
 }
-
