@@ -47,6 +47,20 @@ function renderPartners() {
           r["employee paid"] ||
           "";
 
+        // 1. Try to find a specific website in the CSV
+        let website = 
+          r["website"] || 
+          r["site"] || 
+          r["company website"] || 
+          r["company url"] || 
+          r["web"] ||
+          "";
+
+        // 2. Fallback: Populate via Google Search if missing
+        if (!website && name !== "Unknown") {
+          website = `https://www.google.com/search?q=${encodeURIComponent(name)}`;
+        }
+
         const docsLink =
           r["supporting documents (urls)"] ||
           r["supporting documents"] ||
@@ -56,7 +70,7 @@ function renderPartners() {
           r["link"] ||
           "";
 
-        return { name, region, promo, payment, docsLink };
+        return { name, region, promo, payment, website, docsLink };
       });
 
       if (!partners.length) {
@@ -75,12 +89,20 @@ function renderPartners() {
         return "badge payment";
       };
 
+      const palette = pal();
+
       listEl.innerHTML = partners
         .map(
           p => `
           <li>
             <span class="badge ${p.region === "Canada" ? "can" : "us"}">${p.region}</span>
-            <span class="name">${p.name}</span>
+            <span class="name">
+              ${
+                p.website 
+                ? `<a href="${p.website}" target="_blank" rel="noopener noreferrer" class="partner-link" title="Open search for ${p.name}">${p.name}</a>` 
+                : p.name
+              }
+            </span>
             <span class="meta">
               ${
                 p.payment
@@ -104,7 +126,6 @@ function renderPartners() {
       }, {});
 
       const sorted = Object.entries(pCounts).sort((a,b)=>b[1]-a[1]);
-      const palette = pal();
 
       Plotly.newPlot("partnersByRegion", [{
         x: sorted.map(k => k[0]),
@@ -133,7 +154,6 @@ function renderPartners() {
 
       const payColor = type => {
         const t = type.toLowerCase();
-        // Updated colors to match CSS variables
         if (t.includes("employee paid")) return "#3b82f6"; // var(--primary)
         if (t.includes("employee reimbursement")) return "#f59e0b"; // var(--warn)
         if (t.includes("company paid")) return "#10b981"; // var(--accent)
