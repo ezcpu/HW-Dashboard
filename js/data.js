@@ -64,31 +64,37 @@ function setStatus(msg, type) {
   else if (type === "error") { i.classList.add("error"); s.style.color = "var(--error)"; }
 }
 
-// Theme palette
+// Theme palette - Now reads dynamically from CSS variables
 function pal() {
-  const d = document.body.classList.contains("dark");
+  const s = getComputedStyle(document.body);
+  const get = (v) => s.getPropertyValue(v).trim();
+  
   return {
-    paper: d ? "#0a0e1a" : "#f8fafc",
-    plot: d ? "#0f1629" : "#ffffff",
-    grid: d ? "#1e293b" : "#e2e8f0",
-    font: d ? "#f1f5f9" : "#0f172a",
-    us: "#2563eb",
-    can: "#9333ea",
-    accent: "#10b981"
+    paper: get('--card'),
+    plot: get('--card'),
+    grid: get('--border'),
+    font: get('--text-muted'),
+    us: get('--primary'),
+    can: get('--secondary'),
+    accent: get('--accent')
   };
 }
 
-// Chart layout builder
+// Chart layout builder - Enhanced for cleaner look
 function lay(y, x) {
   const p = pal();
+  const s = getComputedStyle(document.body);
+  const fontFam = s.getPropertyValue('font-family').trim().replace(/"/g, "'") || "'Plus Jakarta Sans', sans-serif";
+  const textColor = s.getPropertyValue('--text').trim();
+
   return {
-    margin: { t: 20, b: 50, l: 60, r: 20 },
+    margin: { t: 30, b: 40, l: 60, r: 20 },
     paper_bgcolor: p.paper,
     plot_bgcolor: p.plot,
-    font: { color: p.font, family: "'Plus Jakarta Sans',sans-serif", size: 12 },
-    xaxis: { title: x, gridcolor: p.grid, zerolinecolor: p.grid, automargin: true },
+    font: { color: p.font, family: fontFam, size: 11 },
+    xaxis: { title: x, gridcolor: p.grid, zerolinecolor: p.grid, showgrid: false, automargin: true },
     yaxis: { title: y, gridcolor: p.grid, zerolinecolor: p.grid, automargin: true },
-    legend: { orientation: "h", y: 1.12, x: 0, bgColor: "rgba(0,0,0,0)" },
+    legend: { orientation: "h", y: 1.15, x: 0, bgcolor: "rgba(0,0,0,0)", font: { size: 12, color: textColor } },
     hovermode: "closest",
     autosize: true
   };
@@ -168,4 +174,3 @@ async function loadData() {
     setStatus("Failed to load data", "error");
   }
 }
-
