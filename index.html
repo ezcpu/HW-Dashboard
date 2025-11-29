@@ -20,7 +20,12 @@
 
 <div class="header">
   <h1>Health & Wellness Dashboard</h1>
-  <button id="themeToggle" class="theme-toggle" aria-label="Toggle theme">🌙 Dark Mode</button>
+  <div class="header-controls">
+    <button onclick="exportCSV()" class="btn-secondary" title="Download filtered data">
+      📥 Export CSV
+    </button>
+    <button id="themeToggle" class="theme-toggle" aria-label="Toggle theme">🌙 Dark Mode</button>
+  </div>
 </div>
 
 <div class="status-bar">
@@ -38,7 +43,7 @@
   <button class="tab-button" role="tab" aria-selected="false" onclick="openTab('clubInsights')">Club Insights</button>
   <button class="tab-button" role="tab" aria-selected="false" onclick="openTab('employerPaid')">Employer-Sponsored</button>
   <button class="tab-button" role="tab" aria-selected="false" onclick="openTab('active')">Active Partners</button>
-  </div>
+</div>
 
 <div class="tab-content active" id="current" role="tabpanel">
   <div class="section">
@@ -135,10 +140,10 @@
 </div>
 
 <script src="js/theme.js"></script>
+<script src="js/partners.js"></script>
 <script src="js/data.js"></script>
 <script src="js/charts.js"></script>
 <script src="js/employer.js"></script>
-<script src="js/partners.js"></script>
 <script src="js/main.js"></script>
 
 </body>

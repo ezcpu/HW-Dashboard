@@ -47,9 +47,7 @@ function renderPartners() {
           r["employee paid"] ||
           "";
 
-        // Website logic removed per request
         const website = "";
-
         const docsLink =
           r["supporting documents (urls)"] ||
           r["supporting documents"] ||
@@ -101,41 +99,46 @@ function renderPartners() {
         )
         .join("");
 
-      // REGIONAL CHART
+      // --- CHART 1: Geographic Distribution (Donut) ---
       const pCounts = partners.reduce((acc, p) => {
         acc[p.region] = (acc[p.region] || 0) + 1;
         return acc;
       }, {});
 
-      const sorted = Object.entries(pCounts).sort((a, b) => b[1] - a[1]);
-
+      // Sort for consistent colors
+      const sortedKeys = Object.keys(pCounts).sort();
+      
       Plotly.newPlot("partnersByRegion", [{
-        x: sorted.map(k => k[0]),
-        y: sorted.map(k => k[1]),
-        type: "bar",
+        labels: sortedKeys,
+        values: sortedKeys.map(k => pCounts[k]),
+        type: "pie",
+        hole: 0.5, // Makes it a Donut chart
         marker: {
-          color: sorted.map(k =>
-            k[0] === "Canada" ? palette.can :
-            k[0] === "East" ? palette.us :
+          colors: sortedKeys.map(k =>
+            k === "Canada" ? palette.can :
+            k === "East" ? palette.us :
             palette.accent)
         },
-        text: sorted.map(k => k[1]),
-        textposition: "auto",
+        textinfo: "label+value", // Shows "West 25" on the slice
         textfont: { color: "white" },
-        textangle: 0
+        hoverinfo: "label+value+percent"
       }], {
-        ...lay("Partners", "Region"),
-        height: 300,
-        margin: { t: 10, l: 50, r: 10, b: 50 }
+        paper_bgcolor: palette.paper,
+        plot_bgcolor: palette.plot,
+        font: { family: "Plus Jakarta Sans", color: palette.font },
+        margin: { t: 30, b: 30, l: 30, r: 30 },
+        showlegend: true,
+        legend: { orientation: "h", xanchor: "center", x: 0.5, y: -0.1 },
+        height: 300
       }, pcfg);
 
-      // PAYMENT TYPE COUNT CHART
+      // --- CHART 2: Payment Arrangement (Donut) ---
       const payCounts = {};
       partners.forEach(p => {
         if (p.payment) payCounts[p.payment] = (payCounts[p.payment] || 0) + 1;
       });
 
-      const paySorted = Object.entries(payCounts).sort((a, b) => b[1] - a[1]);
+      const payKeys = Object.keys(payCounts).sort();
 
       const payColor = type => {
         const t = type.toLowerCase();
@@ -145,20 +148,24 @@ function renderPartners() {
         return palette.accent;
       };
 
-      if (paySorted.length > 0) {
+      if (payKeys.length > 0) {
         Plotly.newPlot("paymentByRegion", [{
-          x: paySorted.map(p => p[0]),
-          y: paySorted.map(p => p[1]),
-          type: "bar",
-          marker: { color: paySorted.map(p => payColor(p[0])) },
-          text: paySorted.map(p => p[1]),
-          textposition: "inside",
-          textfont: { color: "white", size: 14 },
-          textangle: 0
+          labels: payKeys,
+          values: payKeys.map(k => payCounts[k]),
+          type: "pie",
+          hole: 0.5, // Makes it a Donut chart
+          marker: { colors: payKeys.map(k => payColor(k)) },
+          textinfo: "value", // Just show the number (e.g., "43")
+          textfont: { color: "white" },
+          hoverinfo: "label+value+percent"
         }], {
-          ...lay("Partners", "Payment Type"),
-          height: 300,
-          margin: { t: 10, l: 50, r: 10, b: 100 }
+          paper_bgcolor: palette.paper,
+          plot_bgcolor: palette.plot,
+          font: { family: "Plus Jakarta Sans", color: palette.font },
+          margin: { t: 30, b: 30, l: 30, r: 30 },
+          showlegend: true,
+          legend: { orientation: "h", xanchor: "center", x: 0.5, y: -0.1 },
+          height: 300
         }, pcfg);
       } else {
         document.getElementById("paymentByRegion").innerHTML =

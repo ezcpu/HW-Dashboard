@@ -22,27 +22,34 @@ function renderCurrent(data) {
     if (m.includes("10NR")) nr[reg]++;
   });
 
+  // CHART 1: Total Members
   Plotly.newPlot("regionTotalChart", [{
     x: Object.keys(tot), y: Object.values(tot), type: "bar",
     marker: { color: [p.us, p.can] },
     text: Object.values(tot), textposition: "auto",
-    textfont: { color: "white", size: 14 }
+    // FIXED: Ensure size is explicit
+    textfont: { color: "white", size: 14 },
+    textangle: 0
   }], { ...lay("Members","Region"), height: 300 }, pcfg);
 
-  // UPDATED: Added textfont color white
+  // CHART 2: Black Card
   Plotly.newPlot("regionBCChart", [{
     x: Object.keys(bc), y: Object.values(bc), type: "bar",
     marker: { color: [p.us, p.can] },
     text: Object.values(bc), textposition: "auto",
-    textfont: { color: "white" } 
+    // FIXED: Added size: 14 to match Chart 1
+    textfont: { color: "white", size: 14 },
+    textangle: 0
   }], { ...lay("Members","Region"), height: 300 }, pcfg);
 
-  // UPDATED: Added textfont color white
+  // CHART 3: 10NR
   Plotly.newPlot("region10NRChart", [{
     x: Object.keys(nr), y: Object.values(nr), type:"bar",
     marker:{color:[p.us,p.can]},
     text:Object.values(nr), textposition:"auto",
-    textfont: { color: "white" } 
+    // FIXED: Added size: 14 to match Chart 1
+    textfont: { color: "white", size: 14 },
+    textangle: 0
   }], { ...lay("Members","Region"), height: 300 }, pcfg);
 
   const mUS = {}, mCAN = {};
@@ -119,12 +126,31 @@ function setupClub(data) {
 
 function renderClub() {
   const p = pal();
-  const c = document.getElementById("clubSelect").value;
-  const m = document.getElementById("monthSelect").value;
+  const cSelect = document.getElementById("clubSelect");
+  const mSelect = document.getElementById("monthSelect");
+
+  // Safety check if elements exist
+  if (!cSelect || !mSelect) return;
+
+  const c = cSelect.value;
+  const m = mSelect.value;
 
   let rows = [...ST.filtered];
   if (c !== "__ALL__") rows = rows.filter(r => (r["club name"] || "").trim() === c);
   if (m !== "all") rows = rows.filter(r => !isNaN(r.dateParsed) && monthKey(r.dateParsed) === m);
+
+  // Handle Empty State
+  if (rows.length === 0) {
+    document.getElementById("ckpiTotal").textContent = "0";
+    document.getElementById("ckpiBC").textContent = "0";
+    document.getElementById("ckpi10NR").textContent = "0";
+    document.getElementById("ckpiCodes").textContent = "0";
+
+    renderEmptyState("clubRegionDonut", "No members match these filters");
+    renderEmptyState("clubUsage", "No data available");
+    renderEmptyState("clubTrend", "No signups found");
+    return;
+  }
 
   document.getElementById("ckpiTotal").textContent = rows.length.toLocaleString();
   document.getElementById("ckpiBC").textContent =
