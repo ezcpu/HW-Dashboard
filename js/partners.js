@@ -47,19 +47,8 @@ function renderPartners() {
           r["employee paid"] ||
           "";
 
-        // 1. Try to find a specific website in the CSV
-        let website = 
-          r["website"] || 
-          r["site"] || 
-          r["company website"] || 
-          r["company url"] || 
-          r["web"] ||
-          "";
-
-        // 2. Fallback: Populate via Google Search if missing
-        if (!website && name !== "Unknown") {
-          website = `https://www.google.com/search?q=${encodeURIComponent(name)}`;
-        }
+        // Website logic removed/simplified as links are no longer needed
+        const website = ""; 
 
         const docsLink =
           r["supporting documents (urls)"] ||
@@ -91,18 +80,13 @@ function renderPartners() {
 
       const palette = pal();
 
+      // UPDATED: Removed <a> tag around p.name
       listEl.innerHTML = partners
         .map(
           p => `
           <li>
             <span class="badge ${p.region === "Canada" ? "can" : "us"}">${p.region}</span>
-            <span class="name">
-              ${
-                p.website 
-                ? `<a href="${p.website}" target="_blank" rel="noopener noreferrer" class="partner-link" title="Open search for ${p.name}">${p.name}</a>` 
-                : p.name
-              }
-            </span>
+            <span class="name">${p.name}</span>
             <span class="meta">
               ${
                 p.payment
@@ -127,6 +111,7 @@ function renderPartners() {
 
       const sorted = Object.entries(pCounts).sort((a,b)=>b[1]-a[1]);
 
+      // UPDATED: Added textfont color white
       Plotly.newPlot("partnersByRegion", [{
         x: sorted.map(k => k[0]),
         y: sorted.map(k => k[1]),
@@ -137,7 +122,8 @@ function renderPartners() {
           palette.accent )
         },
         text: sorted.map(k => k[1]),
-        textposition:"auto"
+        textposition:"auto",
+        textfont: { color: "white" } 
       }], {
         ...lay("Partners","Region"),
         height:300,
