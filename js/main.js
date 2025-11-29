@@ -24,15 +24,35 @@ function clearFilters() {
   if (typeof renderClub === 'function') renderClub();
 }
 
-// HELPER: Export CSV
+// HELPER: Export CSV (Context Aware)
 function exportCSV() {
-  if (!ST.filtered || !ST.filtered.length) {
-    alert("No data available to export.");
-    return;
+  let dataToExport = [];
+  let filename = "export.csv";
+
+  // Check which tab is active
+  const activeTab = document.querySelector(".tab-content.active");
+  const tabId = activeTab ? activeTab.id : "current";
+
+  if (tabId === "active") {
+    // Export Partners
+    if (!ST.partnersData || !ST.partnersData.length) {
+      alert("No partner data available yet.");
+      return;
+    }
+    dataToExport = ST.partnersData;
+    filename = `partners_export_${new Date().toISOString().slice(0,10)}.csv`;
+  } else {
+    // Export Members (Overview/Club Insights)
+    if (!ST.filtered || !ST.filtered.length) {
+      alert("No member data available to export.");
+      return;
+    }
+    dataToExport = ST.filtered;
+    filename = `members_export_${new Date().toISOString().slice(0,10)}.csv`;
   }
 
-  // Use PapaParse to unparse the filtered dataset
-  const csv = Papa.unparse(ST.filtered);
+  // Use PapaParse to unparse the dataset
+  const csv = Papa.unparse(dataToExport);
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
   
   // Create download link
@@ -40,7 +60,7 @@ function exportCSV() {
   if (link.download !== undefined) {
     const url = URL.createObjectURL(blob);
     link.setAttribute("href", url);
-    link.setAttribute("download", `dashboard_export_${new Date().toISOString().slice(0,10)}.csv`);
+    link.setAttribute("download", filename);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
