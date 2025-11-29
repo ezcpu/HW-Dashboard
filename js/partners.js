@@ -47,7 +47,7 @@ function renderPartners() {
           r["employee paid"] ||
           "";
 
-        const website = "";
+        const website = ""; 
         const docsLink =
           r["supporting documents (urls)"] ||
           r["supporting documents"] ||
@@ -64,6 +64,9 @@ function renderPartners() {
         statusEl.textContent = "No partners found";
         return;
       }
+
+      // --- CRITICAL UPDATE: Store data globally for Export ---
+      ST.partnersData = partners; 
 
       partners.sort((a, b) => a.name.localeCompare(b.name));
 
@@ -105,22 +108,21 @@ function renderPartners() {
         return acc;
       }, {});
 
-      // Sort for consistent colors
       const sortedKeys = Object.keys(pCounts).sort();
       
       Plotly.newPlot("partnersByRegion", [{
         labels: sortedKeys,
         values: sortedKeys.map(k => pCounts[k]),
         type: "pie",
-        hole: 0.5, // Makes it a Donut chart
+        hole: 0.5,
         marker: {
           colors: sortedKeys.map(k =>
             k === "Canada" ? palette.can :
             k === "East" ? palette.us :
             palette.accent)
         },
-        textinfo: "label+value", // Shows "West 25" on the slice
-        textfont: { color: "white" },
+        textinfo: "label+value",
+        textfont: { color: "white", size: 14 }, // UPDATED: Consistent Size
         hoverinfo: "label+value+percent"
       }], {
         paper_bgcolor: palette.paper,
@@ -153,10 +155,10 @@ function renderPartners() {
           labels: payKeys,
           values: payKeys.map(k => payCounts[k]),
           type: "pie",
-          hole: 0.5, // Makes it a Donut chart
+          hole: 0.5,
           marker: { colors: payKeys.map(k => payColor(k)) },
-          textinfo: "value", // Just show the number (e.g., "43")
-          textfont: { color: "white" },
+          textinfo: "value",
+          textfont: { color: "white", size: 14 }, // UPDATED: Consistent Size
           hoverinfo: "label+value+percent"
         }], {
           paper_bgcolor: palette.paper,
