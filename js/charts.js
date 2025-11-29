@@ -29,16 +29,20 @@ function renderCurrent(data) {
     textfont: { color: "white", size: 14 }
   }], { ...lay("Members","Region"), height: 300 }, pcfg);
 
+  // UPDATED: Added textfont color white
   Plotly.newPlot("regionBCChart", [{
     x: Object.keys(bc), y: Object.values(bc), type: "bar",
     marker: { color: [p.us, p.can] },
-    text: Object.values(bc), textposition: "auto"
+    text: Object.values(bc), textposition: "auto",
+    textfont: { color: "white" } 
   }], { ...lay("Members","Region"), height: 300 }, pcfg);
 
+  // UPDATED: Added textfont color white
   Plotly.newPlot("region10NRChart", [{
     x: Object.keys(nr), y: Object.values(nr), type:"bar",
     marker:{color:[p.us,p.can]},
-    text:Object.values(nr), textposition:"auto"
+    text:Object.values(nr), textposition:"auto",
+    textfont: { color: "white" } 
   }], { ...lay("Members","Region"), height: 300 }, pcfg);
 
   const mUS = {}, mCAN = {};
@@ -204,4 +208,3 @@ function renderTopClubs() {
     height:350
   }, pcfg);
 }
-
