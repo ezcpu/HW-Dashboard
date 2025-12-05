@@ -1,25 +1,29 @@
 // Global configuration and state
-const CFG = {
+const CONFIG = { // or whatever your variable name is
   CODES: [
     "CLEMENSBC","CLEMENSWC","MTPCORPWC","CORPBC","CORP15","CORPFMBC",
     "CORPFM15","CORP10","PFCORP10","PFCORPBC"
   ],
 
-  CSV: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ8iruNQ-H8vQvlNMSNXiUtOoxI1b8lEyL7YMBOifM2os3qyRTdmQ2_1V2oKk4vMlQifynBfxrN-u-F/pub?output=csv",
+  // Point to the local file instead of Google
+  CSV: "./data/main.csv",
 
-  PARTNERS: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTXJ4Wm19clU5g5BOxIi_nLA10BAbLuI-s7eYpk9yRmLWCcmcb7ekDGlXldv9buG0GYgJxSLpiRWRXa/pub?output=csv",
+  // Point to the local file
+  PARTNERS: "./data/partners.csv",
 
   EMPLOYER: [
     {
       company: "Pansophia",
       groupKey: "Pansophia",
-      url: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSTKsFVL_lAR2kSk8EHhMlc8-q_Xy1eVJ5kYFXk1ZuQo6Ukpp-GnFNRR6o_DI7rVBXxGvhmCGeecgi1/pub?gid=1580598102&single=true&output=csv",
+      // Point to local file
+      url: "./data/pansophia.csv",
       target: "kpiPansophia"
     },
     {
       company: "ASAMA Coldwater Manufacturing",
       groupKey: "ASAMABC",
-      url: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSTKsFVL_lAR2kSk8EHhMlc8-q_Xy1eVJ5kYFXk1ZuQo6Ukpp-GnFNRR6o_DI7rVBXxGvhmCGeecgi1/pub?gid=1118993687&single=true&output=csv",
+      // Point to local file
+      url: "./data/asama.csv",
       target: "kpiAsama"
     }
   ]
