@@ -1,0 +1,42 @@
+name: Update Dashboard Data
+
+on:
+  schedule:
+    # Runs every 30 minutes
+    - cron: '*/30 * * * *'
+  workflow_dispatch: # Allows manual trigger
+
+permissions:
+  contents: write
+
+jobs:
+  refresh-data:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Create data directory
+        run: mkdir -p data
+
+      - name: Download all CSVs
+        run: |
+          # 1. Main Data CSV
+          curl -L "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ8iruNQ-H8vQvlNMSNXiUtOoxI1b8lEyL7YMBOifM2os3qyRTdmQ2_1V2oKk4vMlQifynBfxrN-u-F/pub?output=csv" -o data/main.csv
+          
+          # 2. Partners CSV
+          curl -L "https://docs.google.com/spreadsheets/d/e/2PACX-1vTXJ4Wm19clU5g5BOxIi_nLA10BAbLuI-s7eYpk9yRmLWCcmcb7ekDGlXldv9buG0GYgJxSLpiRWRXa/pub?output=csv" -o data/partners.csv
+          
+          # 3. Pansophia CSV
+          curl -L "https://docs.google.com/spreadsheets/d/e/2PACX-1vSTKsFVL_lAR2kSk8EHhMlc8-q_Xy1eVJ5kYFXk1ZuQo6Ukpp-GnFNRR6o_DI7rVBXxGvhmCGeecgi1/pub?gid=1580598102&single=true&output=csv" -o data/pansophia.csv
+          
+          # 4. ASAMA CSV
+          curl -L "https://docs.google.com/spreadsheets/d/e/2PACX-1vSTKsFVL_lAR2kSk8EHhMlc8-q_Xy1eVJ5kYFXk1ZuQo6Ukpp-GnFNRR6o_DI7rVBXxGvhmCGeecgi1/pub?gid=1118993687&single=true&output=csv" -o data/asama.csv
+
+      - name: Commit and Push
+        run: |
+          git config user.name "GitHub Action"
+          git config user.email "action@github.com"
+          git add data/*.csv
+          git commit -m "Auto-update dashboard data" || exit 0
+          git push
