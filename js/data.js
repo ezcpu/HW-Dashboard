@@ -1,5 +1,5 @@
 // Global configuration and state
-const CONFIG = { // or whatever your variable name is
+const CFG = { // or whatever your variable name is
   CODES: [
     "CLEMENSBC","CLEMENSWC","MTPCORPWC","CORPBC","CORP15","CORPFMBC",
     "CORPFM15","CORP10","PFCORP10","PFCORPBC"
