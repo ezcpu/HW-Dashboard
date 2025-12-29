@@ -1,22 +1,36 @@
 /* --- js/charts.js --- */
 
-// 1. ORIGINAL FUNCTION: Render Overview/Current Tab
+// 1. RENDER OVERVIEW (Global Year Filter Applied)
 function renderCurrent(data) {
   const p = pal();
+  const ySelect = document.getElementById("yearSelect");
+  
+  // FILTER DATA BY YEAR (If selected)
+  const filterYear = ySelect ? ySelect.value : "all";
+  let displayData = data;
+  
+  if (filterYear !== "all") {
+    displayData = data.filter(r => 
+      !isNaN(r.dateParsed) && 
+      r.dateParsed.getFullYear().toString() === filterYear
+    );
+  }
 
-  document.getElementById("kpiTotal").textContent = data.length.toLocaleString();
+  // UPDATE KPIS
+  document.getElementById("kpiTotal").textContent = displayData.length.toLocaleString();
   document.getElementById("kpiBC").textContent =
-    data.filter(r => (r["membership type"] || "").toUpperCase().includes("BLACK")).length.toLocaleString();
+    displayData.filter(r => (r["membership type"] || "").toUpperCase().includes("BLACK")).length.toLocaleString();
   document.getElementById("kpi10NR").textContent =
-    data.filter(r => (r["membership type"] || "").toUpperCase().includes("10NR")).length.toLocaleString();
+    displayData.filter(r => (r["membership type"] || "").toUpperCase().includes("10NR")).length.toLocaleString();
   document.getElementById("kpiPromo").textContent =
-    new Set(data.map(r => (r["promotion name"] || "").trim()).filter(Boolean)).size;
+    new Set(displayData.map(r => (r["promotion name"] || "").trim()).filter(Boolean)).size;
 
+  // AGGREGATE REGIONAL DATA
   const tot = { US: 0, CAN: 0 },
         bc = { US: 0, CAN: 0 },
         nr = { US: 0, CAN: 0 };
 
-  data.forEach(r => {
+  displayData.forEach(r => {
     const reg = normReg(r["region"]);
     if (!(reg in tot)) return;
     tot[reg]++;
@@ -25,35 +39,31 @@ function renderCurrent(data) {
     if (m.includes("10NR")) nr[reg]++;
   });
 
-  // CHART 1: Total Members
+  // RENDER REGIONAL CHARTS
   Plotly.newPlot("regionTotalChart", [{
     x: Object.keys(tot), y: Object.values(tot), type: "bar",
     marker: { color: [p.us, p.can] },
     text: Object.values(tot), textposition: "auto",
-    textfont: { color: "white", size: 14 },
-    textangle: 0
+    textfont: { color: "white", size: 14 }, textangle: 0
   }], { ...lay("Members","Region"), height: 300 }, pcfg);
 
-  // CHART 2: Black Card
   Plotly.newPlot("regionBCChart", [{
     x: Object.keys(bc), y: Object.values(bc), type: "bar",
     marker: { color: [p.us, p.can] },
     text: Object.values(bc), textposition: "auto",
-    textfont: { color: "white", size: 14 },
-    textangle: 0
+    textfont: { color: "white", size: 14 }, textangle: 0
   }], { ...lay("Members","Region"), height: 300 }, pcfg);
 
-  // CHART 3: 10NR
   Plotly.newPlot("region10NRChart", [{
     x: Object.keys(nr), y: Object.values(nr), type:"bar",
     marker:{color:[p.us,p.can]},
     text:Object.values(nr), textposition:"auto",
-    textfont: { color: "white", size: 14 },
-    textangle: 0
+    textfont: { color: "white", size: 14 }, textangle: 0
   }], { ...lay("Members","Region"), height: 300 }, pcfg);
 
+  // AGGREGATE MONTHLY TRENDS
   const mUS = {}, mCAN = {};
-  data.forEach(r => {
+  displayData.forEach(r => {
     const d = r.dateParsed;
     if (isNaN(d)) return;
     const k = monthKey(d);
@@ -72,9 +82,9 @@ function renderCurrent(data) {
     x: kCAN.map(monthLbl), y: kCAN.map(k => mCAN[k]), type:"bar", marker:{color:p.can}
   }], { ...lay("Signups","Month"), height:300 }, pcfg);
 
-  // Top promo codes
+  // AGGREGATE PROMO CODES
   const pReg = { US:{}, CAN:{} };
-  data.forEach(r => {
+  displayData.forEach(r => {
     const pn = (r["promotion name"] || "").trim();
     if (!pn) return;
     const reg = normReg(r["region"]);
@@ -89,8 +99,7 @@ function renderCurrent(data) {
   const top = Object.entries(pTot).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([pn])=>pn);
 
   if (!top.length) {
-    document.getElementById("promoChart").innerHTML =
-      '<div class="empty-state"><div class="empty-state-icon">📊</div><p>No promotion data</p></div>';
+    document.getElementById("promoChart").innerHTML = '<div class="empty-state"><div class="empty-state-icon">📊</div><p>No promotion data</p></div>';
   } else {
     Plotly.newPlot("promoChart", [
       { name:"US", x: top.map(pn=>pReg.US[pn]||0), y: top, type:"bar", orientation:"h", marker:{color:p.us}},
@@ -99,13 +108,12 @@ function renderCurrent(data) {
   }
 }
 
-// 2. NEW: Multi-Select Helpers
+// 2. MULTI-SELECT HELPERS
 window.toggleClubMenu = function() {
   const el = document.getElementById("clubCheckboxes");
   if (el) el.classList.toggle("show");
 };
 
-// Close dropdown when clicking outside
 window.addEventListener('click', function(e) {
   const multi = document.getElementById('clubMultiSelect');
   if (multi && !multi.contains(e.target)) {
@@ -129,94 +137,124 @@ function updateClubLabel() {
   }
 }
 
-// 3. UPDATED: Setup Clubs (Multi-Select)
+// 3. SETUP FILTERS & LISTENERS
 function setupClub(data) {
   const container = document.getElementById("clubCheckboxes");
   const ms = document.getElementById("monthSelect");
+  const ys = document.getElementById("yearSelect");
   
   if (!container) return;
-  container.innerHTML = ""; // Clear existing
+  container.innerHTML = ""; 
 
-  // Add "All Clubs" Option
+  // --- A. Setup Clubs (Multi-Select) ---
   const addOption = (val, label, isChecked) => {
     const lbl = document.createElement("label");
     lbl.className = "checkbox-label";
-    lbl.innerHTML = `
-      <input type="checkbox" value="${val}" ${isChecked ? "checked" : ""}>
-      <span>${label}</span>
-    `;
+    lbl.innerHTML = `<input type="checkbox" value="${val}" ${isChecked ? "checked" : ""}><span>${label}</span>`;
     
-    // Checkbox Click Logic
     const inp = lbl.querySelector("input");
     inp.onchange = () => {
       const allBoxes = Array.from(container.querySelectorAll("input"));
-      
       if (val === "__ALL__") {
-        if (inp.checked) {
-          allBoxes.forEach(b => { if (b.value !== "__ALL__") b.checked = false; });
-        } else {
-          inp.checked = true; // Prevent unchecking All if it implies empty
-        }
+        if (inp.checked) allBoxes.forEach(b => { if (b.value !== "__ALL__") b.checked = false; });
+        else inp.checked = true;
       } else {
         const allBox = allBoxes.find(b => b.value === "__ALL__");
         if (allBox) allBox.checked = false;
-        
-        if (!allBoxes.some(b => b.checked)) {
-          if (allBox) allBox.checked = true;
-        }
+        if (!allBoxes.some(b => b.checked) && allBox) allBox.checked = true;
       }
       updateClubLabel();
       renderClub();
     };
-    
     container.appendChild(lbl);
   };
 
   addOption("__ALL__", "All Clubs", true);
-
-  // Add Individual Clubs
   [...new Set(data.map(r => (r["club name"] || "").trim()).filter(Boolean))]
     .sort()
     .forEach(c => addOption(c, c, false));
+  updateClubLabel();
 
-  // Setup Month Select
-  ms.innerHTML = ""; 
-  const allOpt = document.createElement("option");
-  allOpt.value = "all";
-  allOpt.textContent = "All Months";
-  ms.appendChild(allOpt);
-
-  ST.months.forEach(m => {
-    const o = document.createElement("option");
-    o.value = m;
-    o.textContent = monthLbl(m);
-    ms.appendChild(o);
-  });
+  // --- B. Setup Year Selector (Global) ---
+  // Extract years from data
+  const years = [...new Set(data.map(r => r.dateParsed.getFullYear()).filter(y => !isNaN(y)))].sort((a,b) => b-a);
   
+  if (ys) {
+    ys.innerHTML = '<option value="all" selected>All Years</option>';
+    years.forEach(y => {
+      const opt = document.createElement("option");
+      opt.value = y;
+      opt.textContent = y;
+      ys.appendChild(opt);
+    });
+    
+    // ON CHANGE: Update EVERYTHING (Overview + Club Insights)
+    ys.onchange = () => {
+      // 1. Update Month options for Club Insights
+      updateMonthOptions();
+      // 2. Re-render Club Insights
+      renderClub(); 
+      // 3. Re-render Overview
+      renderCurrent(ST.filtered); 
+    };
+  }
+
+  // --- C. Setup Month Selector (Helper) ---
+  window.updateMonthOptions = function() {
+    if (!ms) return;
+    const selectedYear = ys ? ys.value : "all";
+    const currentMonth = ms.value; 
+
+    ms.innerHTML = '<option value="all">All Months</option>';
+
+    ST.months.forEach(m => {
+      const [yStr, mStr] = m.split("-");
+      // Add option if Year is "all" OR Year matches selectedYear
+      if (selectedYear === "all" || yStr === selectedYear) {
+        const o = document.createElement("option");
+        o.value = m;
+        o.textContent = monthLbl(m);
+        ms.appendChild(o);
+      }
+    });
+
+    const options = Array.from(ms.options).map(o => o.value);
+    ms.value = options.includes(currentMonth) ? currentMonth : "all";
+  };
+
+  updateMonthOptions();
   ms.onchange = renderClub;
   
-  updateClubLabel();
+  // Initial Render
   renderClub();
 }
 
-// 4. UPDATED: Render Club Insights
+// 4. RENDER CLUB INSIGHTS (Uses Global Year + Local Club/Month)
 function renderClub() {
   const p = pal();
   const mSelect = document.getElementById("monthSelect");
+  const ySelect = document.getElementById("yearSelect");
   const container = document.getElementById("clubCheckboxes");
 
-  // Get selected clubs
+  // Get Filter Values
   const checkedInputs = Array.from(container.querySelectorAll("input:checked"));
   const selectedClubs = checkedInputs.map(i => i.value);
-  const m = mSelect.value;
+  const m = mSelect ? mSelect.value : "all";
+  const y = ySelect ? ySelect.value : "all";
 
   let rows = [...ST.filtered];
 
-  // Filter Logic
+  // Filter 1: Club
   if (!selectedClubs.includes("__ALL__")) {
     rows = rows.filter(r => selectedClubs.includes((r["club name"] || "").trim()));
   }
 
+  // Filter 2: Year
+  if (y !== "all") {
+    rows = rows.filter(r => !isNaN(r.dateParsed) && r.dateParsed.getFullYear().toString() === y);
+  }
+
+  // Filter 3: Month
   if (m !== "all") {
     rows = rows.filter(r => !isNaN(r.dateParsed) && monthKey(r.dateParsed) === m);
   }
@@ -280,7 +318,7 @@ function renderClub() {
   }], { ...lay("Signups", "Month"), height:300 }, pcfg);
 }
 
-// 5. ORIGINAL FUNCTION: Top Clubs
+// 5. TOP CLUBS (UNCHANGED)
 function renderTopClubs() {
   const p = pal();
   const rows = ST.filtered;
