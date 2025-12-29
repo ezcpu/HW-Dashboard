@@ -132,13 +132,17 @@ function renderClub() {
   // Safety check if elements exist
   if (!cSelect || !mSelect) return;
 
-  const c = cSelect.value;
+  const selectedClubs = Array.from(cSelect.selectedOptions).map(o => o.value);
   const m = mSelect.value;
 
   let rows = [...ST.filtered];
-  if (c !== "__ALL__") rows = rows.filter(r => (r["club name"] || "").trim() === c);
-  if (m !== "all") rows = rows.filter(r => !isNaN(r.dateParsed) && monthKey(r.dateParsed) === m);
 
+  // Filter by Club(s)
+  // If "__ALL__" is NOT selected, and we have selections, filter by the specific clubs
+  // (Note: If "__ALL__" is selected, it overrides specific selections and shows everything)
+  if (!selectedClubs.includes("__ALL__") && selectedClubs.length > 0) {
+    rows = rows.filter(r => selectedClubs.includes((r["club name"] || "").trim()));
+    
   // Handle Empty State
   if (rows.length === 0) {
     document.getElementById("ckpiTotal").textContent = "0";
