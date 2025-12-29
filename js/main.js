@@ -116,3 +116,39 @@ function init() {
 }
 
 document.addEventListener("DOMContentLoaded", init);
+
+/* --- Snow Logic --- */
+function startSnow() {
+  const createSnowflake = () => {
+    const snowflake = document.createElement('div');
+    snowflake.classList.add('snowflake');
+    
+    // Randomize size (between 3px and 8px)
+    const size = Math.random() * 5 + 3 + 'px';
+    snowflake.style.width = size;
+    snowflake.style.height = size;
+    
+    // Randomize starting position (horizontal)
+    snowflake.style.left = Math.random() * 100 + 'vw';
+    
+    // Randomize fall speed (between 3s and 8s)
+    const duration = Math.random() * 5 + 3 + 's';
+    snowflake.style.animationDuration = duration;
+    
+    // Randomize opacity slightly for depth
+    snowflake.style.opacity = Math.random() * 0.5 + 0.3;
+
+    document.body.appendChild(snowflake);
+    
+    // Remove snowflake after it falls to keep memory usage low
+    setTimeout(() => {
+      snowflake.remove();
+    }, parseFloat(duration) * 1000);
+  };
+
+  // Create a new snowflake every 100ms
+  setInterval(createSnowflake, 100);
+}
+
+// Start the snow once the page loads
+window.addEventListener('load', startSnow);
