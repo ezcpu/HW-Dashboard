@@ -21,11 +21,14 @@
 <div class="header">
   <h1>Health & Wellness Dashboard</h1>
   <div class="header-controls">
-    <button onclick="exportCSV()" class="btn-secondary" title="Download filtered data">
-      📥 Export CSV
-    </button>
-    <button id="themeToggle" class="theme-toggle" aria-label="Toggle theme">🌙 Dark Mode</button>
-  </div>
+  <select id="yearSelect" style="width:auto; min-width:120px; font-weight:700;">
+    <option value="all" selected>All Years</option>
+  </select>
+  
+  <button onclick="exportCSV()" class="btn-secondary" title="Download filtered data">
+    📥 Export CSV
+  </button>
+  <button id="themeToggle" class="theme-toggle" aria-label="Toggle theme">🌙 Dark Mode</button>
 </div>
 
 <div class="status-bar">
