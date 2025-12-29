@@ -80,11 +80,22 @@
 <div class="tab-content" id="clubInsights" role="tabpanel">
   <div class="card">
     <div class="toolbar">
-      <label class="pill">Club 
-  <select id="clubSelect" multiple size="5" style="height:auto;">
-    <option value="__ALL__" selected>All Clubs</option>
-  </select>
-</label>
+  <label class="pill">Club 
+    <div class="multi-select" id="clubMultiSelect">
+      <div class="select-box" onclick="toggleClubMenu()">
+        <span id="clubSelectLabel">All Clubs</span>
+        <span class="arrow" style="opacity:0.5; font-size:10px;">▼</span>
+      </div>
+      <div class="checkboxes" id="clubCheckboxes"></div>
+    </div>
+  </label>
+
+  <label class="pill">Month 
+    <select id="monthSelect">
+      <option value="all" selected>All Months</option>
+    </select>
+  </label>
+</div>
 
 <label class="pill">Club 
         <div class="multi-select" id="clubMultiSelect">
