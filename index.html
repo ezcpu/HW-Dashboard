@@ -21,10 +21,6 @@
 <div class="header">
   <h1>Health & Wellness Dashboard</h1>
   <div class="header-controls">
-    <select id="yearSelect" style="width:auto; min-width:120px; font-weight:700;">
-      <option value="all" selected>All Years</option>
-    </select>
-    
     <button onclick="exportCSV()" class="btn-secondary" title="Download filtered data">
       📥 Export CSV
     </button>
@@ -85,17 +81,7 @@
   <div class="card">
     <div class="toolbar">
       <label class="pill">Club 
-<<<<<<< HEAD
-        <div class="multi-select" id="clubMultiSelect">
-          <div class="select-box" onclick="toggleClubMenu()">
-            <span id="clubSelectLabel">All Clubs</span>
-            <span class="arrow" style="opacity:0.5; font-size:10px;">▼</span>
-          </div>
-          <div class="checkboxes" id="clubCheckboxes"></div>
-        </div>
-=======
         <select id="clubSelect"><option value="__ALL__" selected>All Clubs</option></select>
->>>>>>> parent of db29cc0 (Update clubSelect to support multiple selections)
       </label>
 
       <label class="pill">Month 
@@ -125,13 +111,11 @@
   <div class="card">
     <h3 class="section-title" style="margin-bottom:20px;">Employer-Sponsored Programs</h3>
     <table>
-      <thead>
-        <tr>
-          <th>Company Name</th>
-          <th style="text-align:right;">Total Members</th>
-        </tr>
-      </thead>
-      <tbody id="employerTableBody"></tbody>
+      <thead><tr><th>Company Name</th><th style="text-align:right;">Total Members</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Pansophia</strong></td><td id="kpiPansophia" style="text-align:right;font-weight:700;">—</td></tr>
+        <tr><td><strong>ASAMA Coldwater Manufacturing</strong></td><td id="kpiAsama" style="text-align:right;font-weight:700;">—</td></tr>
+      </tbody>
     </table>
   </div>
 </div>
