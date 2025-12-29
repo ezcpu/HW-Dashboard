@@ -86,10 +86,15 @@
   </select>
 </label>
 
-      <label class="pill">Month 
-        <select id="monthSelect"><option value="all" selected>All Months</option></select>
+<label class="pill">Club 
+        <div class="multi-select" id="clubMultiSelect">
+          <div class="select-box" onclick="toggleClubMenu()">
+            <span id="clubSelectLabel">All Clubs</span>
+            <span class="arrow" style="opacity:0.5; font-size:10px;">▼</span>
+          </div>
+          <div class="checkboxes" id="clubCheckboxes"></div>
+        </div>
       </label>
-    </div>
 
     <div class="grid-4 kpis">
       <div class="kpi"><h3>Total Members</h3><div class="val" id="ckpiTotal">—</div></div>
