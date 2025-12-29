@@ -14,16 +14,25 @@ function renderEmptyState(id, msg = "No data available") {
 
 // HELPER: Clear Filters
 function clearFilters() {
-  const cSelect = document.getElementById("clubSelect");
+  // Reset Month
   const mSelect = document.getElementById("monthSelect");
-  
-  if(cSelect) cSelect.value = "__ALL__";
   if(mSelect) mSelect.value = "all";
+
+  // Reset Club Checkboxes
+  const container = document.getElementById("clubCheckboxes");
+  if (container) {
+    const inputs = container.querySelectorAll("input");
+    inputs.forEach(inp => {
+      // Check "__ALL__", uncheck everything else
+      inp.checked = (inp.value === "__ALL__");
+    });
+    // Update the label text (e.g., "All Clubs")
+    if (typeof updateClubLabel === 'function') updateClubLabel();
+  }
   
   // Re-trigger render logic
   if (typeof renderClub === 'function') renderClub();
 }
-
 // HELPER: Export CSV (Context Aware)
 function exportCSV() {
   let dataToExport = [];
