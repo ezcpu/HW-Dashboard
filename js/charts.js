@@ -1,3 +1,6 @@
+/* --- js/charts.js --- */
+
+// 1. ORIGINAL FUNCTION: Render Overview/Current Tab
 function renderCurrent(data) {
   const p = pal();
 
@@ -27,7 +30,6 @@ function renderCurrent(data) {
     x: Object.keys(tot), y: Object.values(tot), type: "bar",
     marker: { color: [p.us, p.can] },
     text: Object.values(tot), textposition: "auto",
-    // FIXED: Ensure size is explicit
     textfont: { color: "white", size: 14 },
     textangle: 0
   }], { ...lay("Members","Region"), height: 300 }, pcfg);
@@ -37,7 +39,6 @@ function renderCurrent(data) {
     x: Object.keys(bc), y: Object.values(bc), type: "bar",
     marker: { color: [p.us, p.can] },
     text: Object.values(bc), textposition: "auto",
-    // FIXED: Added size: 14 to match Chart 1
     textfont: { color: "white", size: 14 },
     textangle: 0
   }], { ...lay("Members","Region"), height: 300 }, pcfg);
@@ -47,7 +48,6 @@ function renderCurrent(data) {
     x: Object.keys(nr), y: Object.values(nr), type:"bar",
     marker:{color:[p.us,p.can]},
     text:Object.values(nr), textposition:"auto",
-    // FIXED: Added size: 14 to match Chart 1
     textfont: { color: "white", size: 14 },
     textangle: 0
   }], { ...lay("Members","Region"), height: 300 }, pcfg);
@@ -99,7 +99,7 @@ function renderCurrent(data) {
   }
 }
 
-// Toggle the visibility of the dropdown
+// 2. NEW: Multi-Select Helpers
 window.toggleClubMenu = function() {
   const el = document.getElementById("clubCheckboxes");
   if (el) el.classList.toggle("show");
@@ -112,79 +112,6 @@ window.addEventListener('click', function(e) {
     document.getElementById('clubCheckboxes').classList.remove('show');
   }
 });
-
-function setupClub(data) {
-  const container = document.getElementById("clubCheckboxes");
-  const ms = document.getElementById("monthSelect");
-  
-  if (!container) return;
-  container.innerHTML = ""; // Clear existing
-
-  // 1. Add "All Clubs" Option
-  const addOption = (val, label, isChecked) => {
-    const lbl = document.createElement("label");
-    lbl.className = "checkbox-label";
-    lbl.innerHTML = `
-      <input type="checkbox" value="${val}" ${isChecked ? "checked" : ""}>
-      <span>${label}</span>
-    `;
-    
-    // Checkbox Click Logic
-    const inp = lbl.querySelector("input");
-    inp.onchange = () => {
-      const allBoxes = Array.from(container.querySelectorAll("input"));
-      
-      if (val === "__ALL__") {
-        // If "All" clicked, uncheck everyone else
-        if (inp.checked) {
-          allBoxes.forEach(b => { if (b.value !== "__ALL__") b.checked = false; });
-        } else {
-          // Prevent unchecking "All" if it leaves nothing selected (optional UX preference)
-          inp.checked = true; 
-        }
-      } else {
-        // If specific club clicked, uncheck "All"
-        const allBox = allBoxes.find(b => b.value === "__ALL__");
-        if (allBox) allBox.checked = false;
-        
-        // If nothing is left checked, re-check "All"
-        if (!allBoxes.some(b => b.checked)) {
-          if (allBox) allBox.checked = true;
-        }
-      }
-      updateClubLabel();
-      renderClub();
-    };
-    
-    container.appendChild(lbl);
-  };
-
-  addOption("__ALL__", "All Clubs", true);
-
-  // 2. Add Individual Clubs
-  [...new Set(data.map(r => (r["club name"] || "").trim()).filter(Boolean))]
-    .sort()
-    .forEach(c => addOption(c, c, false));
-
-  // 3. Setup Month Select (standard dropdown)
-  ms.innerHTML = ""; // clear
-  const allOpt = document.createElement("option");
-  allOpt.value = "all";
-  allOpt.textContent = "All Months";
-  ms.appendChild(allOpt);
-
-  ST.months.forEach(m => {
-    const o = document.createElement("option");
-    o.value = m;
-    o.textContent = monthLbl(m);
-    ms.appendChild(o);
-  });
-  
-  ms.onchange = renderClub;
-  
-  updateClubLabel(); // Initialize label
-  renderClub();      // Initial render
-}
 
 function updateClubLabel() {
   const container = document.getElementById("clubCheckboxes");
@@ -202,6 +129,77 @@ function updateClubLabel() {
   }
 }
 
+// 3. UPDATED: Setup Clubs (Multi-Select)
+function setupClub(data) {
+  const container = document.getElementById("clubCheckboxes");
+  const ms = document.getElementById("monthSelect");
+  
+  if (!container) return;
+  container.innerHTML = ""; // Clear existing
+
+  // Add "All Clubs" Option
+  const addOption = (val, label, isChecked) => {
+    const lbl = document.createElement("label");
+    lbl.className = "checkbox-label";
+    lbl.innerHTML = `
+      <input type="checkbox" value="${val}" ${isChecked ? "checked" : ""}>
+      <span>${label}</span>
+    `;
+    
+    // Checkbox Click Logic
+    const inp = lbl.querySelector("input");
+    inp.onchange = () => {
+      const allBoxes = Array.from(container.querySelectorAll("input"));
+      
+      if (val === "__ALL__") {
+        if (inp.checked) {
+          allBoxes.forEach(b => { if (b.value !== "__ALL__") b.checked = false; });
+        } else {
+          inp.checked = true; // Prevent unchecking All if it implies empty
+        }
+      } else {
+        const allBox = allBoxes.find(b => b.value === "__ALL__");
+        if (allBox) allBox.checked = false;
+        
+        if (!allBoxes.some(b => b.checked)) {
+          if (allBox) allBox.checked = true;
+        }
+      }
+      updateClubLabel();
+      renderClub();
+    };
+    
+    container.appendChild(lbl);
+  };
+
+  addOption("__ALL__", "All Clubs", true);
+
+  // Add Individual Clubs
+  [...new Set(data.map(r => (r["club name"] || "").trim()).filter(Boolean))]
+    .sort()
+    .forEach(c => addOption(c, c, false));
+
+  // Setup Month Select
+  ms.innerHTML = ""; 
+  const allOpt = document.createElement("option");
+  allOpt.value = "all";
+  allOpt.textContent = "All Months";
+  ms.appendChild(allOpt);
+
+  ST.months.forEach(m => {
+    const o = document.createElement("option");
+    o.value = m;
+    o.textContent = monthLbl(m);
+    ms.appendChild(o);
+  });
+  
+  ms.onchange = renderClub;
+  
+  updateClubLabel();
+  renderClub();
+}
+
+// 4. UPDATED: Render Club Insights
 function renderClub() {
   const p = pal();
   const mSelect = document.getElementById("monthSelect");
@@ -215,82 +213,14 @@ function renderClub() {
   let rows = [...ST.filtered];
 
   // Filter Logic
-  // If "__ALL__" is NOT selected, filter by the specific list
   if (!selectedClubs.includes("__ALL__")) {
     rows = rows.filter(r => selectedClubs.includes((r["club name"] || "").trim()));
   }
 
-  // Filter by Month
   if (m !== "all") {
     rows = rows.filter(r => !isNaN(r.dateParsed) && monthKey(r.dateParsed) === m);
   }
 
-  // --- The rest of the function remains exactly the same as before ---
-  
-  // Handle Empty State
-  if (rows.length === 0) {
-    document.getElementById("ckpiTotal").textContent = "0";
-    document.getElementById("ckpiBC").textContent = "0";
-    document.getElementById("ckpi10NR").textContent = "0";
-    document.getElementById("ckpiCodes").textContent = "0";
-
-    renderEmptyState("clubRegionDonut", "No members match these filters");
-    renderEmptyState("clubUsage", "No data available");
-    renderEmptyState("clubTrend", "No signups found");
-    return;
-  }
-
-  document.getElementById("ckpiTotal").textContent = rows.length.toLocaleString();
-  document.getElementById("ckpiBC").textContent =
-    rows.filter(r => (r["membership type"] || "").toUpperCase().includes("BLACK")).length.toLocaleString();
-  document.getElementById("ckpi10NR").textContent =
-    rows.filter(r => (r["membership type"] || "").toUpperCase().includes("10NR")).length.toLocaleString();
-  document.getElementById("ckpiCodes").textContent =
-    new Set(rows.map(r => (r["promotion name"] || "").trim()).filter(Boolean)).size;
-
-  const rCnt = { US:0, CAN:0 };
-  rows.forEach(r => {
-    const reg = normReg(r["region"]);
-    if (rCnt[reg] != null) rCnt[reg]++;
-  });
-
-  Plotly.newPlot("clubRegionDonut", [{
-    labels:["US","CAN"], values:[rCnt.US,rCnt.CAN], type:"pie", hole:.6,
-    marker:{colors:[p.us,p.can]}, textinfo:"label+percent"
-  }], { paper_bgcolor:p.paper, plot_bgcolor:p.plot, showlegend:false }, pcfg);
-
-  const pCnt = {};
-  rows.forEach(r => {
-    const pn = (r["promotion name"] || "").trim();
-    if (pn) pCnt[pn] = (pCnt[pn] || 0) + 1;
-  });
-
-  const topCodes = Object.entries(pCnt).sort((a,b)=>b[1]-a[1]).slice(0,5);
-
-  Plotly.newPlot("clubUsage", [{
-    x: topCodes.map(t => t[1]), y: topCodes.map(t => t[0]),
-    type:"bar", orientation:"h", marker:{color:p.accent}
-  }], { ...lay("", "Usage"), margin:{t:10,l:160,b:50,r:20}, height:280 }, pcfg);
-
-  const mData = {};
-  rows.forEach(r => {
-    const d = r.dateParsed;
-    if (!isNaN(d)) mData[monthKey(d)] = (mData[monthKey(d)] || 0) + 1;
-  });
-
-  const mKeys = Object.keys(mData).sort();
-
-  Plotly.newPlot("clubTrend", [{
-    x: mKeys.map(monthLbl), y: mKeys.map(k => mData[k]),
-    type:"scatter", mode:"lines+markers", line:{width:3,color:p.us}, marker:{size:8}
-  }], { ...lay("Signups", "Month"), height:300 }, pcfg);
-}
-  // Filter by Club(s)
-  // If "__ALL__" is NOT selected, and we have selections, filter by the specific clubs
-  // (Note: If "__ALL__" is selected, it overrides specific selections and shows everything)
-  if (!selectedClubs.includes("__ALL__") && selectedClubs.length > 0) {
-    rows = rows.filter(r => selectedClubs.includes((r["club name"] || "").trim()));
-    
   // Handle Empty State
   if (rows.length === 0) {
     document.getElementById("ckpiTotal").textContent = "0";
@@ -350,7 +280,7 @@ function renderClub() {
   }], { ...lay("Signups", "Month"), height:300 }, pcfg);
 }
 
-// TOP CLUBS
+// 5. ORIGINAL FUNCTION: Top Clubs
 function renderTopClubs() {
   const p = pal();
   const rows = ST.filtered;
