@@ -27,11 +27,8 @@ jobs:
           # 2. Partners CSV
           curl -L "https://docs.google.com/spreadsheets/d/e/2PACX-1vTXJ4Wm19clU5g5BOxIi_nLA10BAbLuI-s7eYpk9yRmLWCcmcb7ekDGlXldv9buG0GYgJxSLpiRWRXa/pub?output=csv" -o data/partners.csv
           
-          # 3. Pansophia CSV
-          curl -L "https://docs.google.com/spreadsheets/d/e/2PACX-1vSTKsFVL_lAR2kSk8EHhMlc8-q_Xy1eVJ5kYFXk1ZuQo6Ukpp-GnFNRR6o_DI7rVBXxGvhmCGeecgi1/pub?gid=1580598102&single=true&output=csv" -o data/pansophia.csv
-          
-          # 4. ASAMA CSV
-          curl -L "https://docs.google.com/spreadsheets/d/e/2PACX-1vSTKsFVL_lAR2kSk8EHhMlc8-q_Xy1eVJ5kYFXk1ZuQo6Ukpp-GnFNRR6o_DI7rVBXxGvhmCGeecgi1/pub?gid=1118993687&single=true&output=csv" -o data/asama.csv
+          # 3. Employers Data 
+          curl -L "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ7eVEo2HDTnXzVKhnYMdEiYloj_TTzN5gg6x4vT_H_ODtOIqUT8QRaBfVUVIJVOBPGnZqGBbqobYDo/pub?output=csv" -o data/employers.csv
 
       - name: Commit and Push
         run: |
