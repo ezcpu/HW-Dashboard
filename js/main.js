@@ -14,15 +14,100 @@ function renderEmptyState(id, msg = "No data available") {
 
 // HELPER: Clear Filters
 function clearFilters() {
-  const cSelect = document.getElementById("clubSelect");
   const mSelect = document.getElementById("monthSelect");
-  
-  if(cSelect) cSelect.value = "__ALL__";
   if(mSelect) mSelect.value = "all";
+
+  // Reset Checkboxes to "All"
+  const container = document.getElementById("clubDropdownList");
+  if (container) {
+    const inputs = container.querySelectorAll("input[type='checkbox']");
+    inputs.forEach(input => {
+      input.checked = (input.value === "__ALL__");
+    });
+    if (typeof updateClubButton === 'function') updateClubButton();
+  }
   
   // Re-trigger render logic
   if (typeof renderClub === 'function') renderClub();
 }
+
+// HELPER: Toggle Dropdown
+function toggleClubDropdown(e) {
+  if(e) e.stopPropagation();
+  const menu = document.getElementById("clubDropdownList");
+  if(menu) menu.classList.toggle("show");
+}
+
+// Close dropdown when clicking outside
+window.addEventListener('click', function(e) {
+  const menu = document.getElementById("clubDropdownList");
+  const btn = document.getElementById("clubDropdownBtn");
+  if (menu && menu.classList.contains('show')) {
+    if (!menu.contains(e.target) && !btn.contains(e.target)) {
+      menu.classList.remove('show');
+    }
+  }
+});
+
+// --- NEW GLOBAL FILTER LOGIC ---
+
+window.setupGlobalYear = function() {
+  const sel = document.getElementById("yearSelect");
+  if (!sel) return;
+
+  // Extract years from the PRE-FILTERED data
+  const years = new Set(window.ST.data.map(r => {
+    return isNaN(r.dateParsed) ? null : r.dateParsed.getFullYear();
+  }).filter(Boolean));
+
+  // Explicitly add 2025 and 2026 as requested
+  years.add(2025);
+  years.add(2026);
+
+  // Sort descending
+  const sortedYears = [...years].sort((a,b) => b - a);
+
+  // Populate
+  sel.innerHTML = '<option value="all">All Years</option>';
+  
+  sortedYears.forEach(y => {
+    const opt = document.createElement("option");
+    opt.value = y;
+    opt.textContent = y;
+    sel.appendChild(opt);
+  });
+
+  // Listen for changes
+  sel.onchange = window.updateDashboard;
+}
+
+window.updateDashboard = function() {
+  const ySel = document.getElementById("yearSelect");
+  const selectedYear = ySel ? ySel.value : "all";
+
+  // 1. Filter ST.data (which is already code-filtered) by Year
+  window.ST.filtered = window.ST.data.filter(r => {
+    // Check Year (if selected)
+    if (selectedYear !== "all") {
+      const d = r.dateParsed;
+      if (isNaN(d) || String(d.getFullYear()) !== selectedYear) return false;
+    }
+    return true;
+  });
+
+  // 2. Re-calculate available months based on this filtered set
+  window.ST.months = [...new Set(window.ST.filtered.map(r => {
+    const d = r.dateParsed;
+    return isNaN(d) ? null : window.monthKey(d);
+  }).filter(Boolean))].sort();
+
+  // 3. Render Views
+  if (typeof renderCurrent === 'function') renderCurrent(window.ST.filtered);
+  if (typeof setupClub === 'function') setupClub(window.ST.filtered);
+  if (typeof renderTopClubs === 'function') renderTopClubs();
+}
+
+// -------------------------------
 
 // HELPER: Export CSV (Context Aware)
 function exportCSV() {
@@ -35,19 +120,19 @@ function exportCSV() {
 
   if (tabId === "active") {
     // Export Partners
-    if (!ST.partnersData || !ST.partnersData.length) {
+    if (!window.ST.partnersData || !window.ST.partnersData.length) {
       alert("No partner data available yet.");
       return;
     }
-    dataToExport = ST.partnersData;
+    dataToExport = window.ST.partnersData;
     filename = `partners_export_${new Date().toISOString().slice(0,10)}.csv`;
   } else {
     // Export Members (Overview/Club Insights)
-    if (!ST.filtered || !ST.filtered.length) {
+    if (!window.ST.filtered || !window.ST.filtered.length) {
       alert("No member data available to export.");
       return;
     }
-    dataToExport = ST.filtered;
+    dataToExport = window.ST.filtered;
     filename = `members_export_${new Date().toISOString().slice(0,10)}.csv`;
   }
 
@@ -89,9 +174,12 @@ function openTab(tab) {
 
   if (tab === "employerPaid") renderEmployer();
   else if (tab === "active") renderPartners();
-  else if (["current","clubInsights"].includes(tab) && ST.loaded) rerender();
-
-  requestAnimationFrame(resizeCharts);
+  else if (["current","clubInsights"].includes(tab) && window.ST.loaded) {
+    // Use the filtered set
+    if (typeof renderCurrent === 'function') renderCurrent(window.ST.filtered);
+    // Trigger charts resize/render
+    if (typeof resizeCharts === 'function') requestAnimationFrame(resizeCharts);
+  }
 }
 
 function init() {
@@ -103,16 +191,20 @@ function init() {
 
   document.getElementById("themeToggle").onclick = toggleTheme;
 
-  loadData();
+  if (typeof window.loadData === 'function') window.loadData();
 
   // Resize handling
   let resizeTimer;
   window.addEventListener("resize", () => {
     clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(() => resizeCharts(), 100);
+    resizeTimer = setTimeout(() => {
+        if (typeof resizeCharts === 'function') resizeCharts();
+    }, 100);
   });
 
-  window.addEventListener("load", resizeCharts);
+  window.addEventListener("load", () => {
+      if (typeof resizeCharts === 'function') resizeCharts();
+  });
 }
 
 document.addEventListener("DOMContentLoaded", init);
@@ -122,33 +214,16 @@ function startSnow() {
   const createSnowflake = () => {
     const snowflake = document.createElement('div');
     snowflake.classList.add('snowflake');
-    
-    // Randomize size (between 3px and 8px)
     const size = Math.random() * 5 + 3 + 'px';
     snowflake.style.width = size;
     snowflake.style.height = size;
-    
-    // Randomize starting position (horizontal)
     snowflake.style.left = Math.random() * 100 + 'vw';
-    
-    // Randomize fall speed (between 3s and 8s)
     const duration = Math.random() * 5 + 3 + 's';
     snowflake.style.animationDuration = duration;
-    
-    // Randomize opacity slightly for depth
     snowflake.style.opacity = Math.random() * 0.5 + 0.3;
-
     document.body.appendChild(snowflake);
-    
-    // Remove snowflake after it falls to keep memory usage low
-    setTimeout(() => {
-      snowflake.remove();
-    }, parseFloat(duration) * 1000);
+    setTimeout(() => { snowflake.remove(); }, parseFloat(duration) * 1000);
   };
-
-  // Create a new snowflake every 100ms
   setInterval(createSnowflake, 100);
 }
-
-// Start the snow once the page loads
 window.addEventListener('load', startSnow);

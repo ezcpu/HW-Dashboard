@@ -1,36 +1,23 @@
 // Global configuration and state
-const CFG = { // or whatever your variable name is
+window.CFG = {
+  // UPDATED: New Codes List
   CODES: [
     "CLEMENSBC","CLEMENSWC","MTPCORPWC","CORPBC","CORP15","CORPFMBC",
-    "CORPFM15","CORP10","PFCORP10","PFCORPBC"
+    "CORPFM15","CORP10","PFCORP10","PFCORPBC","IVYTECHBC","IVYTECH15",
+    "CSCL","CSBC","LIPARI15","LIPARIBC"
   ],
-
-  // Point to the local file instead of Google
+  // 1. Local Main Data (Single Source)
   CSV: "./data/main.csv",
-
-  // Point to the local file
+  
+  // 2. Partners Data
   PARTNERS: "./data/partners.csv",
-
-  EMPLOYER: [
-    {
-      company: "Pansophia",
-      groupKey: "Pansophia",
-      // Point to local file
-      url: "./data/pansophia.csv",
-      target: "kpiPansophia"
-    },
-    {
-      company: "ASAMA Coldwater Manufacturing",
-      groupKey: "ASAMABC",
-      // Point to local file
-      url: "./data/asama.csv",
-      target: "kpiAsama"
-    }
-  ]
+  
+  // 3. Employers Data
+  EMPLOYERS: "./data/employers.csv"
 };
 
 // Global State
-const ST = {
+window.ST = {
   data: [],
   filtered: [],
   months: [],
@@ -39,37 +26,39 @@ const ST = {
 };
 
 // Utility functions
-function hasCode(n) {
-  return CFG.CODES.some(c => (n || "").toUpperCase().includes(c));
-}
+window.hasCode = function(n) {
+  return window.CFG.CODES.some(c => (n || "").toUpperCase().includes(c));
+};
 
-function normReg(v) {
+window.normReg = function(v) {
   const s = (v || "").toUpperCase().trim();
   if (["CA","CAN","CANADA"].includes(s)) return "CAN";
   if (["US","USA","UNITED STATES"].includes(s)) return "US";
   return s;
-}
+};
 
-function monthKey(d) {
+window.monthKey = function(d) {
   return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
-}
+};
 
-function monthLbl(k) {
+window.monthLbl = function(k) {
   const [y, m] = k.split("-");
   return new Date(y, m - 1).toLocaleString("default", { month: "short", year: "numeric" });
-}
+};
 
 function setStatus(msg, type) {
   const s = document.getElementById("loadStatus");
   const i = document.getElementById("statusIndicator");
-  s.textContent = msg;
-  i.className = "status-indicator";
-  if (type === "success") { i.classList.add("success"); s.style.color = "var(--accent)"; }
-  else if (type === "error") { i.classList.add("error"); s.style.color = "var(--error)"; }
+  if (s) s.textContent = msg;
+  if (i) {
+    i.className = "status-indicator";
+    if (type === "success") { i.classList.add("success"); s.style.color = "var(--accent)"; }
+    else if (type === "error") { i.classList.add("error"); s.style.color = "var(--error)"; }
+  }
 }
 
-// Theme palette - Now reads dynamically from CSS variables
-function pal() {
+// Theme palette
+window.pal = function() {
   const s = getComputedStyle(document.body);
   const get = (v) => s.getPropertyValue(v).trim();
   
@@ -82,11 +71,11 @@ function pal() {
     can: get('--secondary'),
     accent: get('--accent')
   };
-}
+};
 
-// Chart layout builder - Enhanced for cleaner look
-function lay(y, x) {
-  const p = pal();
+// Chart layout builder
+window.lay = function(y, x) {
+  const p = window.pal();
   const s = getComputedStyle(document.body);
   const fontFam = s.getPropertyValue('font-family').trim().replace(/"/g, "'") || "'Plus Jakarta Sans', sans-serif";
   const textColor = s.getPropertyValue('--text').trim();
@@ -102,16 +91,16 @@ function lay(y, x) {
     hovermode: "closest",
     autosize: true
   };
-}
+};
 
-const pcfg = { displayModeBar: false, responsive: true, autosizable: true };
+window.pcfg = { displayModeBar: false, responsive: true, autosizable: true };
 
 // Main data loading function
 async function loadData() {
-  try {
-    setStatus("Loading data...", "info");
+  setStatus("Loading data...", "info");
 
-    Papa.parse(CFG.CSV, {
+  try {
+    Papa.parse(window.CFG.CSV, {
       download: true,
       header: true,
       skipEmptyLines: true,
@@ -119,48 +108,60 @@ async function loadData() {
         try {
           const data = result.data || [];
 
-          // Clean & normalize
+          // 1. Clean & Normalize
           const processed = data.map(row => {
             const o = {};
             for (const k in row) o[k.trim().toLowerCase()] = row[k];
 
             const ds = (o["created date"] || "").trim();
-            o.dateParsed = new Date(
-              ds.includes("/")
-                ? ds.replace(/(\d{1,2})\/(\d{1,2})\/(\d{4})/, "$3-$1-$2")
-                : ds
-            );
+            
+            // Robust Date Parsing
+            let dateParsed = new Date(ds);
+            
+            if (isNaN(dateParsed) || ds.includes("-") || ds.includes("/")) {
+                const parts = ds.split(/[\/\-\.]/); 
+                if (parts.length === 3) {
+                  let m = parseInt(parts[0], 10);
+                  let d = parseInt(parts[1], 10);
+                  let y = parseInt(parts[2], 10);
+                  
+                  // Handle 2-digit years
+                  if (y < 100) y += 2000; 
+                  dateParsed = new Date(y, m - 1, d);
+                }
+            }
+            o.dateParsed = dateParsed;
             return o;
           });
 
-          ST.data = processed;
-          ST.filtered = processed.filter(r => hasCode(r["promotion name"]));
+          // 2. Pre-filter by Promo Code
+          window.ST.data = processed.filter(r => window.hasCode(r["promotion name"]));
+          
+          // 3. Trigger Dashboard Setup
+          if (typeof window.setupGlobalYear === "function") {
+            window.setupGlobalYear();
+            window.updateDashboard(); 
+          } else {
+              // Fallback for older main.js versions
+              window.ST.filtered = [...window.ST.data];
+              if(typeof renderCurrent === 'function') renderCurrent(window.ST.filtered);
+              if(typeof setupClub === 'function') setupClub(window.ST.filtered);
+              if(typeof renderTopClubs === 'function') renderTopClubs();
+          }
 
-          ST.months = [...new Set(ST.filtered.map(r => {
-            const d = r.dateParsed;
-            return isNaN(d) ? null : monthKey(d);
-          }).filter(Boolean))].sort();
+          window.ST.loaded = true;
 
-          ST.loaded = true;
+          // 4. Update Status
+          setStatus(`${window.ST.data.length} records loaded`, "success");
 
-          renderCurrent(ST.filtered);
-          setupClub(ST.filtered);
-          renderTopClubs();
-
-          const latest = new Date(
-            Math.max(...ST.filtered.map(r => r.dateParsed).filter(d => !isNaN(d)))
-          );
-
-          document.getElementById("lastUpdated").style.display = "flex";
-          document.getElementById("lastUpdatedText").textContent =
-            "Data through: " +
-            latest.toLocaleDateString("en-US", {
-              year: "numeric",
-              month: "short",
-              day: "numeric"
-            });
-
-          setStatus(`${ST.filtered.length} records loaded`, "success");
+          const validDates = window.ST.data.map(r => r.dateParsed).filter(d => !isNaN(d));
+          if (validDates.length > 0) {
+            const latest = new Date(Math.max(...validDates));
+            const lu = document.getElementById("lastUpdated");
+            const lut = document.getElementById("lastUpdatedText");
+            if(lu) lu.style.display = "flex";
+            if(lut) lut.textContent = "Data through: " + latest.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+          }
 
         } catch (e) {
           console.error(e);
@@ -174,7 +175,10 @@ async function loadData() {
     });
 
   } catch (e) {
-    console.error(e);
+    console.error("Data Load Error:", e);
     setStatus("Failed to load data", "error");
   }
 }
+
+// Expose loadData so init can call it
+window.loadData = loadData;

@@ -1,20 +1,28 @@
 function renderCurrent(data) {
-  const p = pal();
+  const p = window.pal();
 
-  document.getElementById("kpiTotal").textContent = data.length.toLocaleString();
-  document.getElementById("kpiBC").textContent =
-    data.filter(r => (r["membership type"] || "").toUpperCase().includes("BLACK")).length.toLocaleString();
-  document.getElementById("kpi10NR").textContent =
-    data.filter(r => (r["membership type"] || "").toUpperCase().includes("10NR")).length.toLocaleString();
-  document.getElementById("kpiPromo").textContent =
-    new Set(data.map(r => (r["promotion name"] || "").trim()).filter(Boolean)).size;
+  // Calculate Counts
+  const total = data.length;
+  const bcCount = data.filter(r => (r["membership type"] || "").toUpperCase().includes("BLACK")).length;
+  const nrCount = data.filter(r => (r["membership type"] || "").toUpperCase().includes("10NR")).length;
+
+  // Update DOM Elements
+  document.getElementById("kpiTotal").textContent = total.toLocaleString();
+  document.getElementById("kpiBC").textContent = bcCount.toLocaleString();
+  document.getElementById("kpi10NR").textContent = nrCount.toLocaleString();
+
+  // --- KPI: Black Card Ratio ---
+  // Avoid division by zero
+  const ratio = total > 0 ? ((bcCount / total) * 100).toFixed(1) + "%" : "0.0%";
+  const elRatio = document.getElementById("kpiRatio");
+  if (elRatio) elRatio.textContent = ratio;
 
   const tot = { US: 0, CAN: 0 },
         bc = { US: 0, CAN: 0 },
         nr = { US: 0, CAN: 0 };
 
   data.forEach(r => {
-    const reg = normReg(r["region"]);
+    const reg = window.normReg(r["region"]);
     if (!(reg in tot)) return;
     tot[reg]++;
     const m = (r["membership type"] || "").toUpperCase();
@@ -27,37 +35,34 @@ function renderCurrent(data) {
     x: Object.keys(tot), y: Object.values(tot), type: "bar",
     marker: { color: [p.us, p.can] },
     text: Object.values(tot), textposition: "auto",
-    // FIXED: Ensure size is explicit
     textfont: { color: "white", size: 14 },
     textangle: 0
-  }], { ...lay("Members","Region"), height: 300 }, pcfg);
+  }], { ...window.lay("Members","Region"), height: 300 }, window.pcfg);
 
   // CHART 2: Black Card
   Plotly.newPlot("regionBCChart", [{
     x: Object.keys(bc), y: Object.values(bc), type: "bar",
     marker: { color: [p.us, p.can] },
     text: Object.values(bc), textposition: "auto",
-    // FIXED: Added size: 14 to match Chart 1
     textfont: { color: "white", size: 14 },
     textangle: 0
-  }], { ...lay("Members","Region"), height: 300 }, pcfg);
+  }], { ...window.lay("Members","Region"), height: 300 }, window.pcfg);
 
   // CHART 3: 10NR
   Plotly.newPlot("region10NRChart", [{
     x: Object.keys(nr), y: Object.values(nr), type:"bar",
     marker:{color:[p.us,p.can]},
     text:Object.values(nr), textposition:"auto",
-    // FIXED: Added size: 14 to match Chart 1
     textfont: { color: "white", size: 14 },
     textangle: 0
-  }], { ...lay("Members","Region"), height: 300 }, pcfg);
+  }], { ...window.lay("Members","Region"), height: 300 }, window.pcfg);
 
   const mUS = {}, mCAN = {};
   data.forEach(r => {
     const d = r.dateParsed;
     if (isNaN(d)) return;
-    const k = monthKey(d);
-    const reg = normReg(r["region"]);
+    const k = window.monthKey(d);
+    const reg = window.normReg(r["region"]);
     if (reg === "US") mUS[k] = (mUS[k] || 0) + 1;
     if (reg === "CAN") mCAN[k] = (mCAN[k] || 0) + 1;
   });
@@ -65,19 +70,19 @@ function renderCurrent(data) {
   const kUS = Object.keys(mUS).sort(), kCAN = Object.keys(mCAN).sort();
 
   Plotly.newPlot("impactUS", [{
-    x: kUS.map(monthLbl), y: kUS.map(k => mUS[k]), type:"bar", marker:{color:p.us}
-  }], { ...lay("Signups","Month"), height:300 }, pcfg);
+    x: kUS.map(window.monthLbl), y: kUS.map(k => mUS[k]), type:"bar", marker:{color:p.us}
+  }], { ...window.lay("Signups","Month"), height:300 }, window.pcfg);
 
   Plotly.newPlot("impactCAN", [{
-    x: kCAN.map(monthLbl), y: kCAN.map(k => mCAN[k]), type:"bar", marker:{color:p.can}
-  }], { ...lay("Signups","Month"), height:300 }, pcfg);
+    x: kCAN.map(window.monthLbl), y: kCAN.map(k => mCAN[k]), type:"bar", marker:{color:p.can}
+  }], { ...window.lay("Signups","Month"), height:300 }, window.pcfg);
 
   // Top promo codes
   const pReg = { US:{}, CAN:{} };
   data.forEach(r => {
     const pn = (r["promotion name"] || "").trim();
     if (!pn) return;
-    const reg = normReg(r["region"]);
+    const reg = window.normReg(r["region"]);
     if (!(reg in pReg)) return;
     pReg[reg][pn] = (pReg[reg][pn] || 0) + 1;
   });
@@ -95,49 +100,124 @@ function renderCurrent(data) {
     Plotly.newPlot("promoChart", [
       { name:"US", x: top.map(pn=>pReg.US[pn]||0), y: top, type:"bar", orientation:"h", marker:{color:p.us}},
       { name:"CAN", x: top.map(pn=>pReg.CAN[pn]||0), y: top, type:"bar", orientation:"h", marker:{color:p.can}}
-    ], { ...lay("", "Usage"), barmode:"group", margin:{t:20,l:180,b:50,r:20}, height:350 }, pcfg);
+    ], { ...window.lay("", "Usage"), barmode:"group", margin:{t:20,l:180,b:50,r:20}, height:350 }, window.pcfg);
+  }
+}
+
+// UPDATE BUTTON LABEL
+function updateClubButton() {
+  const container = document.getElementById("clubDropdownList");
+  if (!container) return;
+  const checkboxes = Array.from(container.querySelectorAll("input[type='checkbox']"));
+  const allCb = checkboxes.find(cb => cb.value === "__ALL__");
+  const others = checkboxes.filter(cb => cb.value !== "__ALL__");
+  
+  const checkedCount = others.filter(cb => cb.checked).length;
+  const btn = document.getElementById("clubDropdownBtn");
+  
+  if (allCb.checked || checkedCount === others.length) {
+    btn.textContent = "All Clubs";
+  } else if (checkedCount === 0) {
+    btn.textContent = "Select Clubs...";
+  } else {
+    btn.textContent = `${checkedCount} Selected`;
   }
 }
 
 // CLUB FILTERS
-function setupClub(data) {
-  const cs = document.getElementById("clubSelect"),
-        ms = document.getElementById("monthSelect");
+window.setupClub = function(data) {
+  const container = document.getElementById("clubDropdownList");
+  const ms = document.getElementById("monthSelect");
 
-  [...new Set(data.map(r => (r["club name"] || "").trim()).filter(Boolean))]
-    .sort()
-    .forEach(c => {
-      const o = document.createElement("option");
-      o.value = c;
-      o.textContent = c;
-      cs.appendChild(o);
+  if (!container || !ms) return;
+  container.innerHTML = ""; // Clear existing
+  ms.innerHTML = '<option value="all" selected>All Months</option>'; // Clear existing months
+
+  const clubs = [...new Set(data.map(r => (r["club name"] || "").trim()).filter(Boolean))].sort();
+
+  // 1. Add "Select All"
+  const allLabel = document.createElement("label");
+  allLabel.className = "checkbox-item";
+  allLabel.innerHTML = `<input type="checkbox" value="__ALL__" checked> <span>All Clubs</span>`;
+  container.appendChild(allLabel);
+
+  const allCb = allLabel.querySelector("input");
+
+  // 2. Add individual clubs
+  clubs.forEach(c => {
+    const lbl = document.createElement("label");
+    lbl.className = "checkbox-item";
+    lbl.innerHTML = `<input type="checkbox" value="${c}" checked> <span>${c}</span>`;
+    container.appendChild(lbl);
+  });
+
+  const checkboxes = Array.from(container.querySelectorAll("input[type='checkbox']"));
+  const others = checkboxes.filter(cb => cb.value !== "__ALL__");
+
+  // 3. Event Listeners
+  allCb.addEventListener("change", (e) => {
+    const checked = e.target.checked;
+    others.forEach(cb => cb.checked = checked);
+    updateClubButton();
+    renderClub();
+  });
+
+  others.forEach(cb => {
+    cb.addEventListener("change", () => {
+      const allChecked = others.every(c => c.checked);
+      allCb.checked = allChecked;
+      updateClubButton();
+      renderClub();
     });
+  });
 
-  ST.months.forEach(m => {
+  // Month setup
+  window.ST.months.forEach(m => {
     const o = document.createElement("option");
     o.value = m;
-    o.textContent = monthLbl(m);
+    o.textContent = window.monthLbl(m);
     ms.appendChild(o);
   });
 
-  cs.onchange = ms.onchange = renderClub;
+  ms.onchange = renderClub;
   renderClub();
 }
 
 function renderClub() {
-  const p = pal();
-  const cSelect = document.getElementById("clubSelect");
+  const p = window.pal();
   const mSelect = document.getElementById("monthSelect");
+  
+  const container = document.getElementById("clubDropdownList");
+  if (!container || !mSelect) return;
 
-  // Safety check if elements exist
-  if (!cSelect || !mSelect) return;
+  const checkboxes = Array.from(container.querySelectorAll("input[type='checkbox']"));
+  const allCb = checkboxes.find(cb => cb.value === "__ALL__");
+  
+  let selectedClubs = [];
+  if (allCb && allCb.checked) {
+    selectedClubs = ["__ALL__"];
+  } else {
+    selectedClubs = checkboxes
+      .filter(cb => cb.value !== "__ALL__" && cb.checked)
+      .map(cb => cb.value);
+  }
 
-  const c = cSelect.value;
   const m = mSelect.value;
+  const showAllClubs = selectedClubs.includes("__ALL__");
 
-  let rows = [...ST.filtered];
-  if (c !== "__ALL__") rows = rows.filter(r => (r["club name"] || "").trim() === c);
-  if (m !== "all") rows = rows.filter(r => !isNaN(r.dateParsed) && monthKey(r.dateParsed) === m);
+  let rows = [...window.ST.filtered];
+
+  // Filter by Club
+  if (!showAllClubs) {
+    if (selectedClubs.length === 0) {
+      rows = []; // Nothing selected
+    } else {
+      rows = rows.filter(r => selectedClubs.includes((r["club name"] || "").trim()));
+    }
+  }
+
+  // Filter by Month
+  if (m !== "all") rows = rows.filter(r => !isNaN(r.dateParsed) && window.monthKey(r.dateParsed) === m);
 
   // Handle Empty State
   if (rows.length === 0) {
@@ -146,9 +226,11 @@ function renderClub() {
     document.getElementById("ckpi10NR").textContent = "0";
     document.getElementById("ckpiCodes").textContent = "0";
 
-    renderEmptyState("clubRegionDonut", "No members match these filters");
-    renderEmptyState("clubUsage", "No data available");
-    renderEmptyState("clubTrend", "No signups found");
+    if (typeof renderEmptyState === 'function') {
+      renderEmptyState("clubRegionDonut", "No members match these filters");
+      renderEmptyState("clubUsage", "No data available");
+      renderEmptyState("clubTrend", "No signups found");
+    }
     return;
   }
 
@@ -162,14 +244,14 @@ function renderClub() {
 
   const rCnt = { US:0, CAN:0 };
   rows.forEach(r => {
-    const reg = normReg(r["region"]);
+    const reg = window.normReg(r["region"]);
     if (rCnt[reg] != null) rCnt[reg]++;
   });
 
   Plotly.newPlot("clubRegionDonut", [{
     labels:["US","CAN"], values:[rCnt.US,rCnt.CAN], type:"pie", hole:.6,
     marker:{colors:[p.us,p.can]}, textinfo:"label+percent"
-  }], { paper_bgcolor:p.paper, plot_bgcolor:p.plot, showlegend:false }, pcfg);
+  }], { paper_bgcolor:p.paper, plot_bgcolor:p.plot, showlegend:false }, window.pcfg);
 
   const pCnt = {};
   rows.forEach(r => {
@@ -182,32 +264,31 @@ function renderClub() {
   Plotly.newPlot("clubUsage", [{
     x: topCodes.map(t => t[1]), y: topCodes.map(t => t[0]),
     type:"bar", orientation:"h", marker:{color:p.accent}
-  }], { ...lay("", "Usage"), margin:{t:10,l:160,b:50,r:20}, height:280 }, pcfg);
+  }], { ...window.lay("", "Usage"), margin:{t:10,l:160,b:50,r:20}, height:280 }, window.pcfg);
 
   const mData = {};
   rows.forEach(r => {
     const d = r.dateParsed;
-    if (!isNaN(d)) mData[monthKey(d)] = (mData[monthKey(d)] || 0) + 1;
+    if (!isNaN(d)) mData[window.monthKey(d)] = (mData[window.monthKey(d)] || 0) + 1;
   });
 
   const mKeys = Object.keys(mData).sort();
 
   Plotly.newPlot("clubTrend", [{
-    x: mKeys.map(monthLbl), y: mKeys.map(k => mData[k]),
+    x: mKeys.map(window.monthLbl), y: mKeys.map(k => mData[k]),
     type:"scatter", mode:"lines+markers", line:{width:3,color:p.us}, marker:{size:8}
-  }], { ...lay("Signups", "Month"), height:300 }, pcfg);
+  }], { ...window.lay("Signups", "Month"), height:300 }, window.pcfg);
 }
 
-// TOP CLUBS
-function renderTopClubs() {
-  const p = pal();
-  const rows = ST.filtered;
+window.renderTopClubs = function() {
+  const p = window.pal();
+  const rows = window.ST.filtered;
   const cUS = {}, cCAN = {};
 
   rows.forEach(r => {
     const club = (r["club name"] || "").trim();
     const promo = (r["promotion name"] || "").trim();
-    const reg = normReg(r["region"]);
+    const reg = window.normReg(r["region"]);
 
     if (!club || !promo) return;
     if (reg === "US") { cUS[club] = cUS[club] || { count:0, promo }; cUS[club].count++; }
@@ -228,9 +309,16 @@ function renderTopClubs() {
     { name:"US", x: top.map(c => cUS[c]?.count || 0), y: names, type:"bar", orientation:"h", marker:{color:p.us}},
     { name:"CAN", x: top.map(c => cCAN[c]?.count || 0), y: names, type:"bar", orientation:"h", marker:{color:p.can}}
   ], {
-    ...lay("", "Usage"),
+    ...window.lay("", "Usage"),
     barmode: "group",
     margin:{t:20,l:320,b:50,r:20},
     height:350
-  }, pcfg);
+  }, window.pcfg);
+}
+
+window.resizeCharts = function() {
+  const plots = document.querySelectorAll('.js-plotly-plot');
+  plots.forEach(plot => {
+    Plotly.Plots.resize(plot);
+  });
 }

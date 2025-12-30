@@ -21,6 +21,10 @@
 <div class="header">
   <h1>Health & Wellness Dashboard</h1>
   <div class="header-controls">
+    <select id="yearSelect" class="year-select" title="Filter by Year">
+      <option value="all">All Years</option>
+    </select>
+    
     <button onclick="exportCSV()" class="btn-secondary" title="Download filtered data">
       📥 Export CSV
     </button>
@@ -51,7 +55,7 @@
       <div class="kpi"><h3>Total Members</h3><div class="val" id="kpiTotal">—</div></div>
       <div class="kpi"><h3>Black Card</h3><div class="val" id="kpiBC">—</div></div>
       <div class="kpi"><h3>10NR Members</h3><div class="val" id="kpi10NR">—</div></div>
-      <div class="kpi"><h3>Promo Codes</h3><div class="val" id="kpiPromo">—</div></div>
+      <div class="kpi"><h3>Black Card Ratio</h3><div class="val" id="kpiRatio">—</div></div>
     </div>
   </div>
 
@@ -80,9 +84,14 @@
 <div class="tab-content" id="clubInsights" role="tabpanel">
   <div class="card">
     <div class="toolbar">
-      <label class="pill">Club 
-        <select id="clubSelect"><option value="__ALL__" selected>All Clubs</option></select>
-      </label>
+      <div class="pill">
+        <span>Club</span>
+        <div class="dropdown-container">
+          <button id="clubDropdownBtn" class="dropdown-trigger" onclick="toggleClubDropdown(event)">All Clubs</button>
+          <div id="clubDropdownList" class="dropdown-menu">
+            </div>
+        </div>
+      </div>
 
       <label class="pill">Month 
         <select id="monthSelect"><option value="all" selected>All Months</option></select>
@@ -112,9 +121,8 @@
     <h3 class="section-title" style="margin-bottom:20px;">Employer-Sponsored Programs</h3>
     <table>
       <thead><tr><th>Company Name</th><th style="text-align:right;">Total Members</th></tr></thead>
-      <tbody>
-        <tr><td><strong>Pansophia</strong></td><td id="kpiPansophia" style="text-align:right;font-weight:700;">—</td></tr>
-        <tr><td><strong>ASAMA Coldwater Manufacturing</strong></td><td id="kpiAsama" style="text-align:right;font-weight:700;">—</td></tr>
+      <tbody id="employerList">
+        <tr><td colspan="2" style="text-align:center;color:var(--text-muted);padding:20px;">Loading data...</td></tr>
       </tbody>
     </table>
   </div>

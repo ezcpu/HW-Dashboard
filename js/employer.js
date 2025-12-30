@@ -1,53 +1,62 @@
-function norm(s) {
-  return (s || "").toString().trim().toLowerCase();
-}
-
-function findGrp(headers) {
-  const n = headers.map(h => norm(h));
-  const i = n.findIndex(h => h === "group" || h === "groups" || h.includes("group"));
-  return i >= 0 ? headers[i] : headers[0];
-}
-
-async function countGrp(url, match) {
-  return new Promise((resolve, reject) => {
-    Papa.parse(url, {
-      download: true,
-      header: true,
-      skipEmptyLines: true,
-      complete: r => {
-        try {
-          const rows = r.data || [];
-          if (!rows.length) return resolve(0);
-
-          const hdrs = Object.keys(rows[0]);
-          const key = findGrp(hdrs);
-          const tot = rows.filter(row =>
-            ((row[key] || "") + "").toLowerCase().includes(match.toLowerCase())
-          ).length;
-
-          resolve(tot);
-        } catch (e) {
-          reject(e);
-        }
-      },
-      error: e => reject(e)
-    });
-  });
-}
-
 async function renderEmployer() {
-  for (const emp of CFG.EMPLOYER) {
-    const el = document.getElementById(emp.target);
-    if (!el) continue;
+  const container = document.getElementById("employerList");
+  if (!container) return;
 
-    el.textContent = "...";
+  if (!window.CFG || !window.CFG.EMPLOYERS) {
+    container.innerHTML = '<tr><td colspan="2" style="text-align:center;">No data source configured</td></tr>';
+    return;
+  }
 
-    try {
-      const tot = await countGrp(emp.url, emp.groupKey);
-      el.textContent = tot.toLocaleString();
-    } catch (e) {
-      console.error(`Employer error for ${emp.company}:`, e);
-      el.textContent = "—";
+  try {
+    // Fetch and parse the single employers CSV
+    const results = await new Promise((resolve, reject) => {
+      Papa.parse(window.CFG.EMPLOYERS, {
+        download: true,
+        header: true,
+        skipEmptyLines: true,
+        complete: resolve,
+        error: reject
+      });
+    });
+
+    const rows = results.data || [];
+    const groupCounts = {};
+
+    // Find the 'group' column (handle case sensitivity)
+    const headers = results.meta.fields || [];
+    const groupCol = headers.find(h => h.trim().toLowerCase() === "group") || "Group";
+
+    // Count members per group
+    rows.forEach(row => {
+      // Get the group name, normalize it slightly
+      const groupName = (row[groupCol] || "").trim();
+      if (groupName) {
+        groupCounts[groupName] = (groupCounts[groupName] || 0) + 1;
+      }
+    });
+
+    // Convert to array and sort by count descending
+    const sortedGroups = Object.entries(groupCounts)
+      .sort((a, b) => b[1] - a[1]);
+
+    if (sortedGroups.length === 0) {
+      container.innerHTML = '<tr><td colspan="2" style="text-align:center;">No employer data found</td></tr>';
+      return;
     }
+
+    // Build HTML
+    container.innerHTML = sortedGroups.map(([company, count]) => `
+      <tr>
+        <td><strong>${company}</strong></td>
+        <td style="text-align:right; font-weight:700;">${count.toLocaleString()}</td>
+      </tr>
+    `).join("");
+
+  } catch (e) {
+    console.error("Error loading employer data:", e);
+    container.innerHTML = '<tr><td colspan="2" style="text-align:center;color:var(--error);">Failed to load employer data</td></tr>';
   }
 }
+
+// Expose to window so tab switching can call it
+window.renderEmployer = renderEmployer;
