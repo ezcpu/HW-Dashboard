@@ -8,7 +8,7 @@ async function renderEmployer() {
   }
 
   try {
-    // Fetch and parse the single employers CSV
+    // 1. Fetch and parse the single employers CSV
     const results = await new Promise((resolve, reject) => {
       Papa.parse(window.CFG.EMPLOYERS, {
         download: true,
@@ -20,37 +20,81 @@ async function renderEmployer() {
     });
 
     const rows = results.data || [];
-    const groupCounts = {};
+    const stats = {};
 
-    // Find the 'group' column (handle case sensitivity)
+    // 2. Identify columns
     const headers = results.meta.fields || [];
-    const groupCol = headers.find(h => h.trim().toLowerCase() === "group") || "Group";
+    
+    // Helper to find column by loose matching
+    const findCol = (terms) => headers.find(h => {
+      const norm = h.trim().toLowerCase();
+      return terms.some(t => norm === t || norm.includes(t));
+    });
 
-    // Count members per group
+    // UPDATED: Prioritize "Club Name" as requested (Column A)
+    const clubCol = findCol(["club name", "club", "location"]) || "Club Name";
+    const groupCol = findCol(["group", "company", "employer"]) || "Group";
+
+    // 3. Aggregate Data
     rows.forEach(row => {
-      // Get the group name, normalize it slightly
       const groupName = (row[groupCol] || "").trim();
+      const clubName = (row[clubCol] || "Unknown Club").trim();
+
       if (groupName) {
-        groupCounts[groupName] = (groupCounts[groupName] || 0) + 1;
+        if (!stats[groupName]) {
+          stats[groupName] = { total: 0, clubs: {} };
+        }
+        
+        // Increment Group Total
+        stats[groupName].total++;
+
+        // Increment Club Breakdown
+        if (clubName) {
+          stats[groupName].clubs[clubName] = (stats[groupName].clubs[clubName] || 0) + 1;
+        }
       }
     });
 
-    // Convert to array and sort by count descending
-    const sortedGroups = Object.entries(groupCounts)
-      .sort((a, b) => b[1] - a[1]);
+    // 4. Sort Groups by Total Count Descending
+    const sortedGroups = Object.entries(stats)
+      .sort((a, b) => b[1].total - a[1].total);
 
     if (sortedGroups.length === 0) {
       container.innerHTML = '<tr><td colspan="2" style="text-align:center;">No employer data found</td></tr>';
       return;
     }
 
-    // Build HTML
-    container.innerHTML = sortedGroups.map(([company, count]) => `
-      <tr>
-        <td><strong>${company}</strong></td>
-        <td style="text-align:right; font-weight:700;">${count.toLocaleString()}</td>
-      </tr>
-    `).join("");
+    // 5. Build HTML
+    let html = "";
+    
+    sortedGroups.forEach(([company, data]) => {
+      // Main Group Row (Company)
+      html += `
+        <tr style="background-color:var(--bg-subtle);">
+          <td style="font-weight:700; color:var(--text);">${company}</td>
+          <td style="text-align:right; font-weight:700; color:var(--text);">${data.total.toLocaleString()}</td>
+        </tr>
+      `;
+
+      // Sort Clubs within this Group (by count desc)
+      const sortedClubs = Object.entries(data.clubs).sort((a, b) => b[1] - a[1]);
+
+      // Sub-rows for Clubs
+      sortedClubs.forEach(([club, count]) => {
+        html += `
+          <tr>
+            <td style="padding-left: 24px; font-size: 13px; color:var(--text-muted); border-bottom: 1px solid var(--border-subtle);">
+              • ${club}
+            </td>
+            <td style="text-align:right; font-size: 13px; color:var(--text-muted); border-bottom: 1px solid var(--border-subtle);">
+              ${count.toLocaleString()}
+            </td>
+          </tr>
+        `;
+      });
+    });
+
+    container.innerHTML = html;
 
   } catch (e) {
     console.error("Error loading employer data:", e);
