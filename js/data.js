@@ -1,19 +1,23 @@
 // Global configuration and state
 window.CFG = {
-  // UPDATED: New Codes List
+  // Promo Codes List
   CODES: [
     "CLEMENSBC","CLEMENSWC","MTPCORPWC","CORPBC","CORP15","CORPFMBC",
     "CORPFM15","CORP10","PFCORP10","PFCORPBC","IVYTECHBC","IVYTECH15",
     "CSCL","CSBC","LIPARI15","LIPARIBC"
   ],
-  // 1. Local Main Data (Single Source)
+
+  // 1. Local Main Data
   CSV: "./data/main.csv",
   
   // 2. Partners Data
   PARTNERS: "./data/partners.csv",
   
-  // 3. Employers Data
-  EMPLOYERS: "./data/employers.csv"
+  // 3. Employers Data (Generic Source)
+  EMPLOYERS: "./data/employers.csv",
+
+  // 4. UAW Ford Data (Special Logic)
+  UAW_FORD: "./data/uaw_ford.csv"
 };
 
 // Global State
@@ -117,15 +121,12 @@ async function loadData() {
             
             // Robust Date Parsing
             let dateParsed = new Date(ds);
-            
             if (isNaN(dateParsed) || ds.includes("-") || ds.includes("/")) {
                 const parts = ds.split(/[\/\-\.]/); 
                 if (parts.length === 3) {
                   let m = parseInt(parts[0], 10);
                   let d = parseInt(parts[1], 10);
                   let y = parseInt(parts[2], 10);
-                  
-                  // Handle 2-digit years
                   if (y < 100) y += 2000; 
                   dateParsed = new Date(y, m - 1, d);
                 }
@@ -142,7 +143,6 @@ async function loadData() {
             window.setupGlobalYear();
             window.updateDashboard(); 
           } else {
-              // Fallback for older main.js versions
               window.ST.filtered = [...window.ST.data];
               if(typeof renderCurrent === 'function') renderCurrent(window.ST.filtered);
               if(typeof setupClub === 'function') setupClub(window.ST.filtered);
