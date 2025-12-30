@@ -21,14 +21,17 @@ jobs:
 
       - name: Download all CSVs
         run: |
-          # 1. Main Data CSV
+          # 1. Main Data CSV (Legacy)
           curl -L "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ8iruNQ-H8vQvlNMSNXiUtOoxI1b8lEyL7YMBOifM2os3qyRTdmQ2_1V2oKk4vMlQifynBfxrN-u-F/pub?output=csv" -o data/main.csv
           
           # 2. Partners CSV
           curl -L "https://docs.google.com/spreadsheets/d/e/2PACX-1vTXJ4Wm19clU5g5BOxIi_nLA10BAbLuI-s7eYpk9yRmLWCcmcb7ekDGlXldv9buG0GYgJxSLpiRWRXa/pub?output=csv" -o data/partners.csv
           
-          # 3. Employers Data 
+          # 3. Employers Data (Generic)
           curl -L "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ7eVEo2HDTnXzVKhnYMdEiYloj_TTzN5gg6x4vT_H_ODtOIqUT8QRaBfVUVIJVOBPGnZqGBbqobYDo/pub?output=csv" -o data/employers.csv
+
+          # 4. UAW Ford Data (New)
+          curl -L "https://docs.google.com/spreadsheets/d/1uG90pclWXLC-g--IumKjgtvHinuSYle_sdOoDVB3lDU/pub?output=csv" -o data/uaw_ford.csv
 
       - name: Commit and Push
         run: |
