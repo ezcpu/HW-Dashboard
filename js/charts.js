@@ -11,8 +11,7 @@ function renderCurrent(data) {
   document.getElementById("kpiBC").textContent = bcCount.toLocaleString();
   document.getElementById("kpi10NR").textContent = nrCount.toLocaleString();
 
-  // --- KPI: Black Card Ratio ---
-  // Avoid division by zero
+  // KPI: Black Card Ratio
   const ratio = total > 0 ? ((bcCount / total) * 100).toFixed(1) + "%" : "0.0%";
   const elRatio = document.getElementById("kpiRatio");
   if (elRatio) elRatio.textContent = ratio;
@@ -219,12 +218,16 @@ function renderClub() {
   // Filter by Month
   if (m !== "all") rows = rows.filter(r => !isNaN(r.dateParsed) && window.monthKey(r.dateParsed) === m);
 
+  // Calculate stats for current filtering context
+  const bcCount = rows.filter(r => (r["membership type"] || "").toUpperCase().includes("BLACK")).length;
+  const total = rows.length;
+
   // Handle Empty State
-  if (rows.length === 0) {
+  if (total === 0) {
     document.getElementById("ckpiTotal").textContent = "0";
     document.getElementById("ckpiBC").textContent = "0";
     document.getElementById("ckpi10NR").textContent = "0";
-    document.getElementById("ckpiCodes").textContent = "0";
+    document.getElementById("ckpiRatio").textContent = "0.0%"; // UPDATED
 
     if (typeof renderEmptyState === 'function') {
       renderEmptyState("clubRegionDonut", "No members match these filters");
@@ -234,13 +237,14 @@ function renderClub() {
     return;
   }
 
-  document.getElementById("ckpiTotal").textContent = rows.length.toLocaleString();
-  document.getElementById("ckpiBC").textContent =
-    rows.filter(r => (r["membership type"] || "").toUpperCase().includes("BLACK")).length.toLocaleString();
+  document.getElementById("ckpiTotal").textContent = total.toLocaleString();
+  document.getElementById("ckpiBC").textContent = bcCount.toLocaleString();
   document.getElementById("ckpi10NR").textContent =
     rows.filter(r => (r["membership type"] || "").toUpperCase().includes("10NR")).length.toLocaleString();
-  document.getElementById("ckpiCodes").textContent =
-    new Set(rows.map(r => (r["promotion name"] || "").trim()).filter(Boolean)).size;
+
+  // UPDATED: Calculate Ratio
+  const ratio = total > 0 ? ((bcCount / total) * 100).toFixed(1) + "%" : "0.0%";
+  document.getElementById("ckpiRatio").textContent = ratio;
 
   const rCnt = { US:0, CAN:0 };
   rows.forEach(r => {
