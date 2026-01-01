@@ -19,7 +19,17 @@
 <body>
 
 <div class="header">
-  <h1>Health & Wellness Dashboard</h1>
+  <div class="dashboard-logo" style="display: flex; align-items: center; gap: 12px;">
+  <svg width="48" height="48" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="50" cy="50" r="48" fill="transparent" stroke="var(--border)" stroke-width="1" />
+    <path d="M30 30V70M30 50H50" stroke="#3b82f6" stroke-width="8" stroke-linecap="round" />
+    <path d="M50 30V70L65 55L80 70V30" fill="none" stroke="#8b5cf6" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" />
+    <circle cx="65" cy="40" r="5" fill="#10b981" />
+  </svg>
+  <div style="line-height: 1;">
+    <h1 style="background: none; -webkit-text-fill-color: unset; font-size: 28px; font-weight: 600; letter-spacing: -0.02em;">Health & Wellness Dashboard</h1>
+  </div>
+</div>
   <div class="header-controls">
     <select id="yearSelect" class="year-select" title="Filter by Year">
       <option value="all">All Years</option>
