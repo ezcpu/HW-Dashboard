@@ -2,183 +2,241 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
-<meta http-equiv="Pragma" content="no-cache"/>
-<meta http-equiv="Expires" content="0"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes"/>
+<title>H&W Dashboard 2026</title>
 
-<title>Health & Wellness Dashboard</title>
-
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="css/styles.css"/>
 
-<script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>
-  <style>
-    path %7B stroke-width: 14; stroke-linecap: round; stroke-linejoin: round; fill: none; %7D
-    .h %7B stroke: %233b82f6; %7D
-    /* Light Mode Violet / Dark Mode Purple */
-    .w %7B stroke: %238b5cf6; %7D
-    .dot %7B fill: %2310b981; %7D
-    
-    @media (prefers-color-scheme: dark) %7B
-      .w %7B stroke: %23a855f7; %7D
-      .dot %7B fill: %23f43f5e; %7D
-    %7D
-  </style>
-  <path class='h' d='M25 25V75M25 50H50' />
-  <path class='w' d='M50 25V75L65 60L80 75V25' />
-  <circle class='dot' cx='65' cy='40' r='10' />
-</svg>">
-  
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><path d='M30 30V70M30 50H50' stroke='%233b82f6' stroke-width='8' stroke-linecap='round'/><path d='M50 30V70L65 55L80 70V30' fill='none' stroke='%238b5cf6' stroke-width='8' stroke-linecap='round' stroke-linejoin='round'/><circle cx='65' cy='40' r='5' fill='%2310b981'/></svg>">
 </head>
 <body>
 
-<div class="header">
-  <div class="dashboard-logo" style="display: flex; align-items: center; gap: 12px;">
-  <svg width="48" height="48" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="50" cy="50" r="48" fill="transparent" stroke="var(--border)" stroke-width="1" />
-    <path d="M30 30V70M30 50H50" stroke="#3b82f6" stroke-width="8" stroke-linecap="round" />
-    <path d="M50 30V70L65 55L80 70V30" fill="none" stroke="#8b5cf6" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" />
-    <circle cx="65" cy="40" r="5" fill="#10b981" />
-  </svg>
-  <div style="line-height: 1;">
-    <h1 style="background: none; -webkit-text-fill-color: unset; font-size: 28px; font-weight: 600; letter-spacing: -0.02em;">Health & Wellness Dashboard</h1>
-  </div>
-</div>
-  <div class="header-controls">
-    <select id="yearSelect" class="year-select" title="Filter by Year">
-      <option value="all">All Years</option>
-    </select>
+<div class="app-background"></div>
+
+<div class="app-container">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo-icon">
+        <svg width="40" height="40" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <path d="M30 30V70M30 50H50" stroke="#3b82f6" stroke-width="8" stroke-linecap="round" />
+          <path d="M50 30V70L65 55L80 70V30" fill="none" stroke="#8b5cf6" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" />
+          <circle cx="65" cy="40" r="5" fill="#10b981" />
+        </svg>
+      </div>
+      <h1 class="sidebar-title">H&W Dashboard</h1>
+    </div>
+
+    <nav class="sidebar-nav" role="tablist">
+      <button class="tab-button active" onclick="openTab('current')">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        Overview
+      </button>
+      <button class="tab-button" onclick="openTab('clubInsights')">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18"/><path d="M5 21V7l8-4 8 4v14"/><path d="M17 21v-8.5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0-.5.5V21"/><path d="M9 10a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2.5a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1V10z"/></svg>
+        Club Insights
+      </button>
+      <button class="tab-button" onclick="openTab('employerPaid')">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+        Employers
+      </button>
+      <button class="tab-button" onclick="openTab('active')">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Partners
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="sidebar-controls">
+        <label class="sidebar-label">Fiscal Year</label>
+        <div class="select-wrapper">
+          <select id="yearSelect" class="glass-select"><option value="all">All Years</option></select>
+        </div>
+        
+        <button onclick="exportCSV()" class="btn-glass">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Export CSV
+        </button>
+        <button id="themeToggle" class="btn-glass">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          Dark Mode
+        </button>
+      </div>
+
+      <div class="team-status">
+        <div class="status-item">
+          <span class="status-indicator" id="statusIndicator"></span>
+          <span id="loadStatus">System Ready</span>
+        </div>
+        <div id="lastUpdated" style="display:none; margin-top: 6px;">
+          <span id="lastUpdatedText" style="opacity:0.7">—</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main-content">
     
-    <button onclick="exportCSV()" class="btn-secondary" title="Download filtered data">
-      📥 Export CSV
-    </button>
-    <button id="themeToggle" class="theme-toggle" aria-label="Toggle theme">🌙 Dark Mode</button>
-  </div>
-</div>
-
-<div class="status-bar">
-  <div class="status-item">
-    <span class="status-indicator" id="statusIndicator"></span>
-    <span id="loadStatus">Initializing...</span>
-  </div>
-  <div class="status-item" id="lastUpdated" style="display:none;">
-    <span>📅</span><span id="lastUpdatedText">—</span>
-  </div>
-</div>
-
-<div class="tabs" role="tablist">
-  <button class="tab-button active" role="tab" aria-selected="true" onclick="openTab('current')">Overview</button>
-  <button class="tab-button" role="tab" aria-selected="false" onclick="openTab('clubInsights')">Club Insights</button>
-  <button class="tab-button" role="tab" aria-selected="false" onclick="openTab('employerPaid')">Employer-Sponsored</button>
-  <button class="tab-button" role="tab" aria-selected="false" onclick="openTab('active')">Active Partners</button>
-</div>
-
-<div class="tab-content active" id="current" role="tabpanel">
-  <div class="section">
-    <div class="grid-4 kpis">
-      <div class="kpi"><h3>Total Members</h3><div class="val" id="kpiTotal">—</div></div>
-      <div class="kpi"><h3>Black Card</h3><div class="val" id="kpiBC">—</div></div>
-      <div class="kpi"><h3>10NR Members</h3><div class="val" id="kpi10NR">—</div></div>
-      <div class="kpi"><h3>Black Card Ratio</h3><div class="val" id="kpiRatio">—</div></div>
-    </div>
-  </div>
-
-  <div class="section">
-    <h3 class="section-title">Regional Distribution</h3>
-    <div class="grid-3">
-      <div class="card"><div class="legend">Total Members by Region</div><div id="regionTotalChart"></div></div>
-      <div class="card"><div class="legend">Black Card by Region</div><div id="regionBCChart"></div></div>
-      <div class="card"><div class="legend">10NR by Region</div><div id="region10NRChart"></div></div>
-    </div>
-  </div>
-
-  <div class="section">
-    <h3 class="section-title">Monthly Trends</h3>
-    <div class="grid-2">
-      <div class="card"><div class="legend">United States Signups</div><div id="impactUS"></div></div>
-      <div class="card"><div class="legend">Canada Signups</div><div id="impactCAN"></div></div>
-    </div>
-  </div>
-
-  <div class="section">
-    <div class="card"><div class="legend">Top 5 Promotion Codes (US vs Canada)</div><div id="promoChart"></div></div>
-  </div>
-</div>
-
-<div class="tab-content" id="clubInsights" role="tabpanel">
-  <div class="card">
-    <div class="toolbar">
-      <div class="pill">
-        <span>Club</span>
-        <div class="dropdown-container">
-          <button id="clubDropdownBtn" class="dropdown-trigger" onclick="toggleClubDropdown(event)">All Clubs</button>
-          <div id="clubDropdownList" class="dropdown-menu">
-            </div>
+    <div class="tab-content active" id="current">
+      
+      <div class="kpi-grid">
+        <div class="glass-panel kpi-card">
+          <div class="kpi-icon-wrap blue">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+          <div class="kpi-content">
+            <h3>Total Members</h3>
+            <div class="val" id="kpiTotal">—</div>
+          </div>
+        </div>
+        <div class="glass-panel kpi-card">
+          <div class="kpi-icon-wrap purple">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+          </div>
+          <div class="kpi-content">
+            <h3>Black Card</h3>
+            <div class="val" id="kpiBC">—</div>
+          </div>
+        </div>
+        <div class="glass-panel kpi-card">
+          <div class="kpi-icon-wrap white">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+          </div>
+          <div class="kpi-content">
+            <h3>10NR Members</h3>
+            <div class="val" id="kpi10NR">—</div>
+          </div>
+        </div>
+        <div class="glass-panel kpi-card">
+          <div class="kpi-icon-wrap orange">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          </div>
+          <div class="kpi-content">
+            <h3>Black Card Ratio</h3>
+            <div class="val" id="kpiRatio">—</div>
+          </div>
         </div>
       </div>
 
-      <label class="pill">Month 
-        <select id="monthSelect"><option value="all" selected>All Months</option></select>
-      </label>
+      <div class="section-title">Regional Distribution</div>
+      <div class="grid-3">
+        <div class="glass-panel"><div class="legend">Total Members</div><div id="regionTotalChart" class="chart-container"></div></div>
+        <div class="glass-panel"><div class="legend">Black Card</div><div id="regionBCChart" class="chart-container"></div></div>
+        <div class="glass-panel"><div class="legend">10NR</div><div id="region10NRChart" class="chart-container"></div></div>
+      </div>
+
+      <div class="section-title" style="margin-top: 60px;">Monthly Trends</div>
+      <div class="grid-2">
+        <div class="glass-panel"><div class="legend">US Signups</div><div id="impactUS" class="chart-container"></div></div>
+        <div class="glass-panel"><div class="legend">Canada Signups</div><div id="impactCAN" class="chart-container"></div></div>
+      </div>
+
+      <div class="glass-panel mt-4">
+        <div class="legend">Top 5 Promotions</div><div id="promoChart" class="chart-container"></div>
+      </div>
     </div>
 
-    <div class="grid-4 kpis">
-      <div class="kpi"><h3>Total Members</h3><div class="val" id="ckpiTotal">—</div></div>
-      <div class="kpi"><h3>Black Card</h3><div class="val" id="ckpiBC">—</div></div>
-      <div class="kpi"><h3>10NR Members</h3><div class="val" id="ckpi10NR">—</div></div>
-      <div class="kpi"><h3>Black Card Ratio</h3><div class="val" id="ckpiRatio">—</div></div>
+    <div class="tab-content" id="clubInsights">
+      <div class="glass-toolbar">
+        <div class="control-group">
+          <span>Club Filter:</span>
+          <div class="dropdown-container">
+            <button id="clubDropdownBtn" class="dropdown-trigger" onclick="toggleClubDropdown(event)">All Clubs</button>
+            <div id="clubDropdownList" class="glass-dropdown-menu"></div>
+          </div>
+        </div>
+        <div class="control-group">
+          <span>Month:</span>
+          <select id="monthSelect" class="glass-select inline"><option value="all">All Months</option></select>
+        </div>
+      </div>
+
+      <div class="kpi-grid mt-4">
+        <div class="glass-panel kpi-card">
+          <div class="kpi-icon-wrap blue">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+          <div class="kpi-content">
+            <h3>Filtered Members</h3><div class="val" id="ckpiTotal">—</div>
+          </div>
+        </div>
+        <div class="glass-panel kpi-card">
+          <div class="kpi-icon-wrap purple">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+          </div>
+          <div class="kpi-content">
+            <h3>Black Card</h3><div class="val" id="ckpiBC">—</div>
+          </div>
+        </div>
+        <div class="glass-panel kpi-card">
+          <div class="kpi-icon-wrap white">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+          </div>
+          <div class="kpi-content">
+            <h3>10NR</h3><div class="val" id="ckpi10NR">—</div>
+          </div>
+        </div>
+        <div class="glass-panel kpi-card">
+          <div class="kpi-icon-wrap orange">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          </div>
+          <div class="kpi-content">
+            <h3>Ratio</h3><div class="val" id="ckpiRatio">—</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-2 mt-4">
+        <div class="glass-panel"><div class="legend">Regional Split</div><div id="clubRegionDonut" class="chart-container"></div></div>
+        <div class="glass-panel"><div class="legend">Top Codes</div><div id="clubUsage" class="chart-container"></div></div>
+      </div>
+      
+      <div class="glass-panel mt-4">
+        <div class="legend">Signup Trend</div><div id="clubTrend" class="chart-container"></div>
+      </div>
+
+      <div class="glass-panel mt-4">
+        <div class="legend">Top Clubs Performance</div><div id="topClubsChart" class="chart-container"></div>
+      </div>
     </div>
 
-    <div class="grid-2" style="margin-top:24px;">
-      <div class="card"><div class="legend">Regional Split</div><div id="clubRegionDonut"></div></div>
-      <div class="card"><div class="legend">Top Promotion Codes</div><div id="clubUsage"></div></div>
+    <div class="tab-content" id="employerPaid">
+      <div class="glass-panel">
+        <h3 class="panel-header">Employer-Sponsored Programs</h3>
+        <table class="glass-table">
+          <thead><tr><th>Company Name</th><th style="text-align:right;">Total Members</th></tr></thead>
+          <tbody id="employerList">
+            <tr><td colspan="2" class="loading-cell">Loading data...</td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
 
-    <div class="card" style="margin-top:24px;"><div class="legend">Monthly Signup Trend</div><div id="clubTrend"></div></div>
-  </div>
+    <div class="tab-content" id="active">
+        <h3 class="section-title">Active Partnership Network</h3>
+        <div class="grid-2 mb-4">
+          <div class="glass-panel"><div class="legend">Geography</div><div id="partnersByRegion" class="chart-container"></div></div>
+          <div class="glass-panel"><div class="legend">Payment Types</div><div id="paymentByRegion" class="chart-container"></div></div>
+        </div>
 
-  <div class="card" style="margin-top:24px;"><div class="legend">Top 5 Clubs by Usage (US vs Canada)</div><div id="topClubsChart"></div></div>
-</div>
-
-<div class="tab-content" id="employerPaid" role="tabpanel">
-  <div class="card">
-    <h3 class="section-title" style="margin-bottom:20px;">Employer-Sponsored Programs</h3>
-    <table>
-      <thead><tr><th>Company Name</th><th style="text-align:right;">Total Members</th></tr></thead>
-      <tbody id="employerList">
-        <tr><td colspan="2" style="text-align:center;color:var(--text-muted);padding:20px;">Loading data...</td></tr>
-      </tbody>
-    </table>
-  </div>
-</div>
-
-<div class="tab-content" id="active" role="tabpanel">
-  <div class="card">
-    <div class="section-header">
-      <h3 class="section-title">Active Partnership Network</h3>
-      <div id="activeStatus" class="status-item"><span class="status-indicator"></span><span>Loading...</span></div>
+        <div class="glass-panel">
+            <div class="legend">Directory</div>
+            <div class="scrollable-directory">
+                <ul id="partnersList" class="glass-list"></ul>
+            </div>
+        </div>
     </div>
 
-    <div class="grid-2" style="margin-bottom:24px;">
-      <div class="card"><div class="legend">Geographic Distribution</div><div id="partnersByRegion"></div></div>
-      <div class="card"><div class="legend">Payment Arrangement Types</div><div id="paymentByRegion"></div></div>
-    </div>
-
-    <div>
-      <div class="legend" style="margin-bottom:16px;">Partner Directory</div>
-      <ul id="partnersList" class="partners-list" style="max-height:600px;overflow-y:auto;"></ul>
-    </div>
-  </div>
+  </main>
 </div>
 
 <script src="js/theme.js"></script>
-<script src="js/partners.js"></script>
 <script src="js/data.js"></script>
 <script src="js/charts.js"></script>
+<script src="js/partners.js"></script>
 <script src="js/employer.js"></script>
 <script src="js/main.js"></script>
 

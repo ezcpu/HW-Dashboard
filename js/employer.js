@@ -1,143 +1,95 @@
-// Helper to fetch CSV
 async function fetchCSV(url) {
-  return new Promise((resolve, reject) => {
-    Papa.parse(url, {
-      download: true,
-      header: true,
-      skipEmptyLines: true,
-      complete: resolve,
-      error: (err) => {
-        console.warn(`Failed to load ${url}`, err);
-        resolve({ data: [] }); // Fail gracefully
-      }
-    });
-  });
-}
-
-// Helper: Process Generic Employers
-async function processGeneric(stats) {
-  if (!window.CFG.EMPLOYERS) return;
-  
-  const results = await fetchCSV(window.CFG.EMPLOYERS);
-  const rows = results.data || [];
-  const headers = results.meta.fields || [];
-
-  // Find columns
-  const findCol = (terms) => headers.find(h => {
-    const norm = h.trim().toLowerCase();
-    return terms.some(t => norm === t || norm.includes(t));
-  });
-
-  const groupCol = findCol(["group", "company", "employer"]) || "Group";
-  const clubCol = findCol(["club name", "club", "location"]) || "Club Name";
-
-  rows.forEach(row => {
-    const groupName = (row[groupCol] || "").trim();
-    const clubName = (row[clubCol] || "Unknown Club").trim();
-
-    if (groupName) {
-      if (!stats[groupName]) stats[groupName] = { total: 0, clubs: {} };
-      stats[groupName].total++;
-      stats[groupName].clubs[clubName] = (stats[groupName].clubs[clubName] || 0) + 1;
-    }
-  });
-}
-
-// Helper: Process UAW Ford (Specific Logic)
-async function processUAW(stats) {
-  if (!window.CFG.UAW_FORD) return;
-
-  const results = await fetchCSV(window.CFG.UAW_FORD);
-  const rows = results.data || [];
-  const headers = results.meta.fields || [];
-
-  // Logic: Active if Date in Column J is less than 12 months old
-  // Column J is index 9
-  const dateCol = headers[9]; // "Column J" implies 10th column (0-9)
-  const clubCol = headers.find(h => h.toLowerCase().includes("club") || h.toLowerCase().includes("location")) || headers[0]; // Best guess for Club
-
-  const ONE_YEAR_MS = 365 * 24 * 60 * 60 * 1000;
-  const now = new Date();
-  const groupName = "UAW Ford";
-
-  rows.forEach(row => {
-    const dateStr = (row[dateCol] || "").trim();
-    const clubName = (row[clubCol] || "Unknown Club").trim();
-
-    // Parse Date
-    const d = new Date(dateStr);
-    
-    // Check if valid date and active (< 12 months)
-    if (!isNaN(d) && (now - d) < ONE_YEAR_MS) {
-      if (!stats[groupName]) stats[groupName] = { total: 0, clubs: {} };
-      
-      stats[groupName].total++;
-      stats[groupName].clubs[clubName] = (stats[groupName].clubs[clubName] || 0) + 1;
-    }
+  return new Promise(resolve => {
+    Papa.parse(url, { download:true, header:true, skipEmptyLines:true, complete:resolve, error:()=>resolve({data:[], meta:{fields:[]}}) });
   });
 }
 
 async function renderEmployer() {
-  const container = document.getElementById("employerList");
-  if (!container) return;
-
-  container.innerHTML = '<tr><td colspan="2" style="text-align:center;color:var(--text-muted);">Loading data...</td></tr>';
-
-  const stats = {};
+  const con = document.getElementById("employerList");
+  if(!con) return;
+  con.innerHTML = '<tr><td colspan="2" class="loading-cell">Processing...</td></tr>';
 
   try {
-    // Process all sources in parallel
-    await Promise.all([
-      processGeneric(stats),
-      processUAW(stats)
+    const [gen, uaw] = await Promise.all([
+      fetchCSV(window.CFG.EMPLOYERS),
+      fetchCSV(window.CFG.UAW_FORD)
     ]);
 
-    // Sort Groups by Total Count Descending
-    const sortedGroups = Object.entries(stats)
-      .sort((a, b) => b[1].total - a[1].total);
-
-    if (sortedGroups.length === 0) {
-      container.innerHTML = '<tr><td colspan="2" style="text-align:center;">No employer data found</td></tr>';
-      return;
-    }
-
-    // Build HTML
-    let html = "";
+    const stats = {};
     
-    sortedGroups.forEach(([company, data]) => {
-      // Main Group Row
-      html += `
-        <tr style="background-color:var(--bg-subtle);">
-          <td style="font-weight:700; color:var(--text);">${company}</td>
-          <td style="text-align:right; font-weight:700; color:var(--text);">${data.total.toLocaleString()}</td>
-        </tr>
-      `;
-
-      // Sort Clubs within this Group
-      const sortedClubs = Object.entries(data.clubs).sort((a, b) => b[1] - a[1]);
-
-      // Sub-rows for Clubs
-      sortedClubs.forEach(([club, count]) => {
-        html += `
-          <tr>
-            <td style="padding-left: 24px; font-size: 13px; color:var(--text-muted); border-bottom: 1px solid var(--border-subtle);">
-              • ${club}
-            </td>
-            <td style="text-align:right; font-size: 13px; color:var(--text-muted); border-bottom: 1px solid var(--border-subtle);">
-              ${count.toLocaleString()}
-            </td>
-          </tr>
-        `;
-      });
+    // --- 1. PROCESS GENERIC EMPLOYERS ---
+    const normalize = (rows) => rows.map(r => {
+      const o = {};
+      for (let k in r) o[k.trim().toLowerCase()] = r[k];
+      return o;
     });
 
-    container.innerHTML = html;
+    const processGeneric = (rows, grpTerms, clubTerms) => {
+      const normRows = normalize(rows);
+      if(!normRows.length) return;
+      const keys = Object.keys(normRows[0]);
+      const gKey = grpTerms ? keys.find(k => grpTerms.some(t => k.includes(t))) : null;
+      const cKey = keys.find(k => clubTerms.some(t => k.includes(t))) || keys[0];
 
-  } catch (e) {
-    console.error("Error loading employer data:", e);
-    container.innerHTML = '<tr><td colspan="2" style="text-align:center;color:var(--error);">Failed to load employer data</td></tr>';
+      normRows.forEach(r => {
+        const g = (gKey ? (r[gKey]||"").trim() : "Unknown");
+        const c = (cKey ? (r[cKey]||"Unknown").trim() : "Unknown");
+        if(g && g !== "Unknown") {
+          if(!stats[g]) stats[g] = { total:0, clubs:{} };
+          stats[g].total++;
+          stats[g].clubs[c] = (stats[g].clubs[c]||0)+1;
+        }
+      });
+    };
+
+    processGeneric(gen.data, ['group', 'company', 'employer'], ['club', 'location']);
+
+    // --- 2. PROCESS UAW FORD (Restored Logic) ---
+    // Logic: Active if Date in Column J (Index 9) is less than 12 months old
+    if (uaw.data && uaw.data.length > 0) {
+      const headers = uaw.meta.fields || [];
+      const dateCol = headers[9]; // Column J
+      // Fallback for club column search
+      const clubCol = headers.find(h => h.toLowerCase().includes("club") || h.toLowerCase().includes("location")) || headers[0];
+      
+      const ONE_YEAR_MS = 365 * 24 * 60 * 60 * 1000;
+      const now = new Date();
+      const groupName = "UAW Ford";
+
+      uaw.data.forEach(row => {
+        const dateStr = (row[dateCol] || "").trim();
+        const clubName = (row[clubCol] || "Unknown Club").trim();
+
+        // Robust Date Parsing
+        const d = new Date(dateStr);
+        
+        // Active Check
+        if (!isNaN(d) && (now - d) < ONE_YEAR_MS) {
+           if (!stats[groupName]) stats[groupName] = { total: 0, clubs: {} };
+           
+           stats[groupName].total++;
+           stats[groupName].clubs[clubName] = (stats[groupName].clubs[clubName] || 0) + 1;
+        }
+      });
+    }
+
+    // --- 3. RENDER ---
+    const sorted = Object.entries(stats).sort((a,b)=>b[1].total - a[1].total);
+    
+    if(!sorted.length) { 
+      con.innerHTML = '<tr><td colspan="2" style="text-align:center;padding:20px;color:var(--text-muted)">No Data Found</td></tr>'; 
+      return; 
+    }
+
+    con.innerHTML = sorted.map(([k,v]) => {
+      const clubs = Object.entries(v.clubs).sort((a,b)=>b[1]-a[1]).map(([cn,cc]) => 
+        `<tr><td style="padding-left:24px; color:var(--text-muted); font-size:13px">• ${cn}</td><td style="text-align:right; color:var(--text-muted); font-size:13px">${cc}</td></tr>`
+      ).join("");
+      return `<tr style="background:rgba(255,255,255,0.05)"><td style="font-weight:700">${k}</td><td style="text-align:right; font-weight:700">${v.total}</td></tr>` + clubs;
+    }).join("");
+
+  } catch(e) { 
+    console.error(e);
+    con.innerHTML = '<tr><td colspan="2" style="color:var(--error); text-align:center">Error loading data</td></tr>'; 
   }
 }
-
-// Expose to window so tab switching can call it
-window.renderEmployer = renderEmployer;

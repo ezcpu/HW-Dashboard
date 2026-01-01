@@ -1,328 +1,293 @@
+// GLOBAL CHART STORAGE
+window.CHART_INSTANCES = {};
+
+function destroyChart(id) {
+  if (window.CHART_INSTANCES[id]) {
+    window.CHART_INSTANCES[id].destroy();
+    delete window.CHART_INSTANCES[id];
+  }
+}
+
+function renderApex(id, options) {
+  destroyChart(id);
+  const el = document.getElementById(id);
+  if (!el) return;
+  const chart = new ApexCharts(el, options);
+  chart.render();
+  window.CHART_INSTANCES[id] = chart;
+}
+
 function renderCurrent(data) {
   const p = window.pal();
+  const cmn = window.apexCommon();
+  
+  // Metrics Calculation
+  let total = 0, bcCount = 0, nrCount = 0;
+  const tot = { US: 0, CAN: 0 };
+  const bc = { US: 0, CAN: 0 };
+  const nr = { US: 0, CAN: 0 };
 
-  // Calculate Counts
-  const total = data.length;
-  const bcCount = data.filter(r => (r["membership type"] || "").toUpperCase().includes("BLACK")).length;
-  const nrCount = data.filter(r => (r["membership type"] || "").toUpperCase().includes("10NR")).length;
+  data.forEach(r => {
+    const reg = window.normReg(r["region"]);
+    const m = (r["membership type"] || "").toUpperCase();
 
-  // Update DOM Elements
+    total++;
+    
+    if (reg in tot) tot[reg]++;
+
+    if (m.includes("BLACK")) {
+      bcCount++;
+      if (reg in bc) bc[reg]++;
+    }
+    if (m.includes("10NR")) {
+      nrCount++;
+      if (reg in nr) nr[reg]++;
+    }
+  });
+
   document.getElementById("kpiTotal").textContent = total.toLocaleString();
   document.getElementById("kpiBC").textContent = bcCount.toLocaleString();
   document.getElementById("kpi10NR").textContent = nrCount.toLocaleString();
+  document.getElementById("kpiRatio").textContent = total > 0 ? ((bcCount / total) * 100).toFixed(1) + "%" : "0.0%";
 
-  // KPI: Black Card Ratio
-  const ratio = total > 0 ? ((bcCount / total) * 100).toFixed(1) + "%" : "0.0%";
-  const elRatio = document.getElementById("kpiRatio");
-  if (elRatio) elRatio.textContent = ratio;
-
-  const tot = { US: 0, CAN: 0 },
-        bc = { US: 0, CAN: 0 },
-        nr = { US: 0, CAN: 0 };
-
-  data.forEach(r => {
-    const reg = window.normReg(r["region"]);
-    if (!(reg in tot)) return;
-    tot[reg]++;
-    const m = (r["membership type"] || "").toUpperCase();
-    if (m.includes("BLACK")) bc[reg]++;
-    if (m.includes("10NR")) nr[reg]++;
+  // -- REGIONAL BARS (With Visible Totals) --
+  const barOpts = (name, dataObj) => ({
+    ...cmn,
+    chart: { type: 'bar', height: 260, toolbar: { show: false }, background: 'transparent' },
+    colors: [p.us, p.can],
+    plotOptions: {
+      bar: { distributed: true, borderRadius: 6, columnWidth: '55%', dataLabels: { position: 'top' } }
+    },
+    dataLabels: {
+      enabled: true, offsetY: -20,
+      style: { fontSize: '12px', fontWeight: 800, colors: [p.text] }
+    },
+    series: [{ name: name, data: [dataObj.US, dataObj.CAN] }],
+    xaxis: { categories: ['US', 'CAN'], labels: { style: { colors: [p.text, p.text], fontWeight: 700 } }, axisBorder: {show:false}, axisTicks: {show:false} },
+    grid: { show: false }
   });
 
-  // CHART 1: Total Members
-  Plotly.newPlot("regionTotalChart", [{
-    x: Object.keys(tot), y: Object.values(tot), type: "bar",
-    marker: { color: [p.us, p.can] },
-    text: Object.values(tot), textposition: "auto",
-    textfont: { color: "white", size: 14 },
-    textangle: 0
-  }], { ...window.lay("Members","Region"), height: 300 }, window.pcfg);
+  renderApex("regionTotalChart", barOpts("Total", tot));
+  renderApex("regionBCChart", barOpts("Black Card", bc));
+  renderApex("region10NRChart", barOpts("10NR", nr));
 
-  // CHART 2: Black Card
-  Plotly.newPlot("regionBCChart", [{
-    x: Object.keys(bc), y: Object.values(bc), type: "bar",
-    marker: { color: [p.us, p.can] },
-    text: Object.values(bc), textposition: "auto",
-    textfont: { color: "white", size: 14 },
-    textangle: 0
-  }], { ...window.lay("Members","Region"), height: 300 }, window.pcfg);
-
-  // CHART 3: 10NR
-  Plotly.newPlot("region10NRChart", [{
-    x: Object.keys(nr), y: Object.values(nr), type:"bar",
-    marker:{color:[p.us,p.can]},
-    text:Object.values(nr), textposition:"auto",
-    textfont: { color: "white", size: 14 },
-    textangle: 0
-  }], { ...window.lay("Members","Region"), height: 300 }, window.pcfg);
-
-  const mUS = {}, mCAN = {};
+  // -- TRENDS --
+  const mUS={}, mCAN={};
   data.forEach(r => {
-    const d = r.dateParsed;
-    if (isNaN(d)) return;
-    const k = window.monthKey(d);
-    const reg = window.normReg(r["region"]);
-    if (reg === "US") mUS[k] = (mUS[k] || 0) + 1;
-    if (reg === "CAN") mCAN[k] = (mCAN[k] || 0) + 1;
+    if(!isNaN(r.dateParsed)) {
+      const reg = window.normReg(r["region"]);
+      const k = window.monthKey(r.dateParsed);
+      
+      if(reg==="US") mUS[k] = (mUS[k]||0)+1;
+      if(reg==="CAN") mCAN[k] = (mCAN[k]||0)+1;
+    }
+  });
+  const kUS=Object.keys(mUS).sort(), kCAN=Object.keys(mCAN).sort();
+
+  const trendOpts = (color, cats, vals) => ({
+    ...cmn,
+    chart: { type: 'area', height: 300, toolbar: { show: false }, background: 'transparent' },
+    colors: [color],
+    fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.4, opacityTo: 0.05, stops: [0, 100] } },
+    dataLabels: { enabled: false },
+    stroke: { curve: 'smooth', width: 3 },
+    series: [{ name: "Signups", data: vals }],
+    xaxis: { categories: cats, labels: { style: { colors: p.textMuted } } }
   });
 
-  const kUS = Object.keys(mUS).sort(), kCAN = Object.keys(mCAN).sort();
+  renderApex("impactUS", trendOpts(p.us, kUS.map(window.monthLbl), kUS.map(k=>mUS[k])));
+  renderApex("impactCAN", trendOpts(p.can, kCAN.map(window.monthLbl), kCAN.map(k=>mCAN[k])));
 
-  Plotly.newPlot("impactUS", [{
-    x: kUS.map(window.monthLbl), y: kUS.map(k => mUS[k]), type:"bar", marker:{color:p.us}
-  }], { ...window.lay("Signups","Month"), height:300 }, window.pcfg);
-
-  Plotly.newPlot("impactCAN", [{
-    x: kCAN.map(window.monthLbl), y: kCAN.map(k => mCAN[k]), type:"bar", marker:{color:p.can}
-  }], { ...window.lay("Signups","Month"), height:300 }, window.pcfg);
-
-  // Top promo codes
+  // -- PROMO --
   const pReg = { US:{}, CAN:{} };
   data.forEach(r => {
-    const pn = (r["promotion name"] || "").trim();
-    if (!pn) return;
-    const reg = window.normReg(r["region"]);
-    if (!(reg in pReg)) return;
-    pReg[reg][pn] = (pReg[reg][pn] || 0) + 1;
+    const pn = (r["promotion name"]||"").trim();
+    if(pn) {
+      const reg = window.normReg(r["region"]);
+      if(reg in pReg) pReg[reg][pn] = (pReg[reg][pn]||0)+1;
+    }
   });
+  const allP = [...new Set([...Object.keys(pReg.US), ...Object.keys(pReg.CAN)])];
+  const topP = allP.sort((a,b)=> ((pReg.US[b]||0)+(pReg.CAN[b]||0)) - ((pReg.US[a]||0)+(pReg.CAN[a]||0)) ).slice(0,5);
 
-  const all = new Set([...Object.keys(pReg.US), ...Object.keys(pReg.CAN)]);
-  const pTot = {};
-  all.forEach(pn => pTot[pn] = (pReg.US[pn] || 0) + (pReg.CAN[pn] || 0));
-
-  const top = Object.entries(pTot).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([pn])=>pn);
-
-  if (!top.length) {
-    document.getElementById("promoChart").innerHTML =
-      '<div class="empty-state"><div class="empty-state-icon">📊</div><p>No promotion data</p></div>';
-  } else {
-    Plotly.newPlot("promoChart", [
-      { name:"US", x: top.map(pn=>pReg.US[pn]||0), y: top, type:"bar", orientation:"h", marker:{color:p.us}},
-      { name:"CAN", x: top.map(pn=>pReg.CAN[pn]||0), y: top, type:"bar", orientation:"h", marker:{color:p.can}}
-    ], { ...window.lay("", "Usage"), barmode:"group", margin:{t:20,l:180,b:50,r:20}, height:350 }, window.pcfg);
-  }
-}
-
-// UPDATE BUTTON LABEL
-function updateClubButton() {
-  const container = document.getElementById("clubDropdownList");
-  if (!container) return;
-  const checkboxes = Array.from(container.querySelectorAll("input[type='checkbox']"));
-  const allCb = checkboxes.find(cb => cb.value === "__ALL__");
-  const others = checkboxes.filter(cb => cb.value !== "__ALL__");
-  
-  const checkedCount = others.filter(cb => cb.checked).length;
-  const btn = document.getElementById("clubDropdownBtn");
-  
-  if (allCb.checked || checkedCount === others.length) {
-    btn.textContent = "All Clubs";
-  } else if (checkedCount === 0) {
-    btn.textContent = "Select Clubs...";
-  } else {
-    btn.textContent = `${checkedCount} Selected`;
-  }
-}
-
-// CLUB FILTERS
-window.setupClub = function(data) {
-  const container = document.getElementById("clubDropdownList");
-  const ms = document.getElementById("monthSelect");
-
-  if (!container || !ms) return;
-  container.innerHTML = ""; // Clear existing
-  ms.innerHTML = '<option value="all" selected>All Months</option>'; // Clear existing months
-
-  const clubs = [...new Set(data.map(r => (r["club name"] || "").trim()).filter(Boolean))].sort();
-
-  // 1. Add "Select All"
-  const allLabel = document.createElement("label");
-  allLabel.className = "checkbox-item";
-  allLabel.innerHTML = `<input type="checkbox" value="__ALL__" checked> <span>All Clubs</span>`;
-  container.appendChild(allLabel);
-
-  const allCb = allLabel.querySelector("input");
-
-  // 2. Add individual clubs
-  clubs.forEach(c => {
-    const lbl = document.createElement("label");
-    lbl.className = "checkbox-item";
-    lbl.innerHTML = `<input type="checkbox" value="${c}" checked> <span>${c}</span>`;
-    container.appendChild(lbl);
-  });
-
-  const checkboxes = Array.from(container.querySelectorAll("input[type='checkbox']"));
-  const others = checkboxes.filter(cb => cb.value !== "__ALL__");
-
-  // 3. Event Listeners
-  allCb.addEventListener("change", (e) => {
-    const checked = e.target.checked;
-    others.forEach(cb => cb.checked = checked);
-    updateClubButton();
-    renderClub();
-  });
-
-  others.forEach(cb => {
-    cb.addEventListener("change", () => {
-      const allChecked = others.every(c => c.checked);
-      allCb.checked = allChecked;
-      updateClubButton();
-      renderClub();
+  if(topP.length) {
+    renderApex("promoChart", {
+      ...cmn,
+      chart: { type: 'bar', height: 320, stacked: true, toolbar:{show:false}, background:'transparent' },
+      colors: [p.us, p.can],
+      plotOptions: { bar: { horizontal: true, borderRadius: 4, barHeight: '60%' } },
+      
+      // WHITE TEXT FIX FOR STACKED BARS
+      dataLabels: { enabled: true, style: { colors: ['#ffffff'], fontSize: '12px', fontWeight: 600 } },
+      
+      series: [
+        { name: 'US', data: topP.map(n=>pReg.US[n]||0) },
+        { name: 'CAN', data: topP.map(n=>pReg.CAN[n]||0) }
+      ],
+      xaxis: { categories: topP, labels: { style: { colors: p.textMuted } } },
+      legend: { show: true, position: 'top' }
     });
-  });
-
-  // Month setup
-  window.ST.months.forEach(m => {
-    const o = document.createElement("option");
-    o.value = m;
-    o.textContent = window.monthLbl(m);
-    ms.appendChild(o);
-  });
-
-  ms.onchange = renderClub;
-  renderClub();
+  }
 }
 
 function renderClub() {
   const p = window.pal();
-  const mSelect = document.getElementById("monthSelect");
+  const cmn = window.apexCommon();
+  const con = document.getElementById("clubDropdownList");
   
-  const container = document.getElementById("clubDropdownList");
-  if (!container || !mSelect) return;
-
-  const checkboxes = Array.from(container.querySelectorAll("input[type='checkbox']"));
-  const allCb = checkboxes.find(cb => cb.value === "__ALL__");
-  
-  let selectedClubs = [];
-  if (allCb && allCb.checked) {
-    selectedClubs = ["__ALL__"];
-  } else {
-    selectedClubs = checkboxes
-      .filter(cb => cb.value !== "__ALL__" && cb.checked)
-      .map(cb => cb.value);
+  if(!con || con.children.length === 0) { 
+    if(window.ST.filtered && window.ST.filtered.length > 0) setupClub(window.ST.filtered); 
+    return; 
   }
 
-  const m = mSelect.value;
-  const showAllClubs = selectedClubs.includes("__ALL__");
+  const inputs = Array.from(con.querySelectorAll("input"));
+  const all = inputs.find(i=>i.value==="__ALL__");
+  const sel = (all && all.checked) ? ["__ALL__"] : inputs.filter(i=>i.checked && i.value!=="__ALL__").map(i=>i.value);
+  const month = document.getElementById("monthSelect").value;
 
-  let rows = [...window.ST.filtered];
-
-  // Filter by Club
-  if (!showAllClubs) {
-    if (selectedClubs.length === 0) {
-      rows = []; // Nothing selected
-    } else {
-      rows = rows.filter(r => selectedClubs.includes((r["club name"] || "").trim()));
+  // Filter Data
+  let rows = window.ST.filtered.filter(r => {
+    // 1. Club Filter
+    if (!sel.includes("__ALL__")) {
+        const cName = (r["club name"]||"").trim();
+        if (!sel.includes(cName)) return false;
     }
-  }
+    // 2. Month Filter
+    if (month !== "all") {
+        if (isNaN(r.dateParsed) || window.monthKey(r.dateParsed) !== month) return false;
+    }
+    return true;
+  });
 
-  // Filter by Month
-  if (m !== "all") rows = rows.filter(r => !isNaN(r.dateParsed) && window.monthKey(r.dateParsed) === m);
-
-  // Calculate stats for current filtering context
-  const bcCount = rows.filter(r => (r["membership type"] || "").toUpperCase().includes("BLACK")).length;
   const total = rows.length;
+  const bc = rows.filter(r=>(r["membership type"]||"").toUpperCase().includes("BLACK")).length;
+  const nr = rows.filter(r=>(r["membership type"]||"").toUpperCase().includes("10NR")).length;
+  
+  document.getElementById("ckpiTotal").textContent = total.toLocaleString();
+  document.getElementById("ckpiBC").textContent = bc.toLocaleString();
+  document.getElementById("ckpi10NR").textContent = nr.toLocaleString();
+  document.getElementById("ckpiRatio").textContent = total>0 ? ((bc/total)*100).toFixed(1)+"%" : "0%";
 
-  // Handle Empty State
-  if (total === 0) {
-    document.getElementById("ckpiTotal").textContent = "0";
-    document.getElementById("ckpiBC").textContent = "0";
-    document.getElementById("ckpi10NR").textContent = "0";
-    document.getElementById("ckpiRatio").textContent = "0.0%"; // UPDATED
-
-    if (typeof renderEmptyState === 'function') {
-      renderEmptyState("clubRegionDonut", "No members match these filters");
-      renderEmptyState("clubUsage", "No data available");
-      renderEmptyState("clubTrend", "No signups found");
-    }
-    return;
+  if(total===0) { 
+    ['clubRegionDonut','clubTrend','clubUsage'].forEach(id => destroyChart(id));
+    return; 
   }
 
-  document.getElementById("ckpiTotal").textContent = total.toLocaleString();
-  document.getElementById("ckpiBC").textContent = bcCount.toLocaleString();
-  document.getElementById("ckpi10NR").textContent =
-    rows.filter(r => (r["membership type"] || "").toUpperCase().includes("10NR")).length.toLocaleString();
-
-  // UPDATED: Calculate Ratio
-  const ratio = total > 0 ? ((bcCount / total) * 100).toFixed(1) + "%" : "0.0%";
-  document.getElementById("ckpiRatio").textContent = ratio;
-
-  const rCnt = { US:0, CAN:0 };
-  rows.forEach(r => {
-    const reg = window.normReg(r["region"]);
-    if (rCnt[reg] != null) rCnt[reg]++;
+  // Donut
+  const rCnt = {US:0, CAN:0};
+  rows.forEach(r => { const reg=window.normReg(r["region"]); if(rCnt[reg]!=null) rCnt[reg]++; });
+  renderApex("clubRegionDonut", {
+    ...cmn,
+    chart: { type: 'donut', height: 260, background: 'transparent' },
+    labels: ['US', 'Canada'],
+    colors: [p.us, p.can],
+    series: [rCnt.US, rCnt.CAN],
+    plotOptions: { pie: { donut: { size: '65%' } } },
+    legend: { show: true, position: 'bottom' }
   });
 
-  Plotly.newPlot("clubRegionDonut", [{
-    labels:["US","CAN"], values:[rCnt.US,rCnt.CAN], type:"pie", hole:.6,
-    marker:{colors:[p.us,p.can]}, textinfo:"label+percent"
-  }], { paper_bgcolor:p.paper, plot_bgcolor:p.plot, showlegend:false }, window.pcfg);
-
-  const pCnt = {};
-  rows.forEach(r => {
-    const pn = (r["promotion name"] || "").trim();
-    if (pn) pCnt[pn] = (pCnt[pn] || 0) + 1;
-  });
-
-  const topCodes = Object.entries(pCnt).sort((a,b)=>b[1]-a[1]).slice(0,5);
-
-  Plotly.newPlot("clubUsage", [{
-    x: topCodes.map(t => t[1]), y: topCodes.map(t => t[0]),
-    type:"bar", orientation:"h", marker:{color:p.accent}
-  }], { ...window.lay("", "Usage"), margin:{t:10,l:160,b:50,r:20}, height:280 }, window.pcfg);
-
+  // Trend
   const mData = {};
-  rows.forEach(r => {
-    const d = r.dateParsed;
-    if (!isNaN(d)) mData[window.monthKey(d)] = (mData[window.monthKey(d)] || 0) + 1;
+  rows.forEach(r => { if(!isNaN(r.dateParsed)) { const k=window.monthKey(r.dateParsed); mData[k]=(mData[k]||0)+1; }});
+  const mKeys = Object.keys(mData).sort();
+  renderApex("clubTrend", {
+    ...cmn,
+    chart: { type: 'area', height: 360, toolbar:{show:false}, background:'transparent' },
+    colors: [p.us],
+    fill: { type: 'gradient', gradient: { shadeIntensity:1, opacityFrom:0.4, opacityTo:0.05 } },
+    series: [{ name: "Signups", data: mKeys.map(k=>mData[k]) }],
+    xaxis: { categories: mKeys.map(window.monthLbl) }
   });
 
-  const mKeys = Object.keys(mData).sort();
-
-  Plotly.newPlot("clubTrend", [{
-    x: mKeys.map(window.monthLbl), y: mKeys.map(k => mData[k]),
-    type:"scatter", mode:"lines+markers", line:{width:3,color:p.us}, marker:{size:8}
-  }], { ...window.lay("Signups", "Month"), height:300 }, window.pcfg);
+  // Usage
+  const pCnt={};
+  rows.forEach(r=>{ const pn=(r["promotion name"]||"").trim(); if(pn) pCnt[pn]=(pCnt[pn]||0)+1; });
+  const topC = Object.entries(pCnt).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  renderApex("clubUsage", {
+    ...cmn,
+    chart: { type: 'bar', height: 260, toolbar:{show:false}, background:'transparent' },
+    colors: [p.accent],
+    plotOptions: { bar: { horizontal: true, borderRadius: 4, barHeight: '50%' } },
+    series: [{ name: "Count", data: topC.map(t=>t[1]) }],
+    xaxis: { categories: topC.map(t=>t[0]) }
+  });
+  
+  renderTopClubs(rows);
 }
 
-window.renderTopClubs = function() {
+function renderTopClubs(data) {
   const p = window.pal();
-  const rows = window.ST.filtered;
-  const cUS = {}, cCAN = {};
+  const cmn = window.apexCommon();
+  const cUS={}, cCAN={};
+  data.forEach(r => {
+    const c = (r["club name"]||"").trim();
+    if(c) {
+      const reg = window.normReg(r["region"]);
+      if(reg==="US") cUS[c]=(cUS[c]||0)+1;
+      if(reg==="CAN") cCAN[c]=(cCAN[c]||0)+1;
+    }
+  });
+  const all = [...new Set([...Object.keys(cUS), ...Object.keys(cCAN)])];
+  const top = all.sort((a,b)=> ((cUS[b]||0)+(cCAN[b]||0)) - ((cUS[a]||0)+(cCAN[a]||0)) ).slice(0,5);
+  
+  renderApex("topClubsChart", {
+    ...cmn,
+    chart: { type: 'bar', height: 360, stacked: true, toolbar:{show:false}, background:'transparent' },
+    colors: [p.us, p.can],
+    plotOptions: { bar: { horizontal: true, borderRadius: 4, barHeight: '60%' } },
+    series: [
+      { name: 'US', data: top.map(c=>cUS[c]||0) },
+      { name: 'CAN', data: top.map(c=>cCAN[c]||0) }
+    ],
+    xaxis: { categories: top },
+    legend: { show: true, position: 'top' }
+  });
+}
 
-  rows.forEach(r => {
-    const club = (r["club name"] || "").trim();
-    const promo = (r["promotion name"] || "").trim();
-    const reg = window.normReg(r["region"]);
-
-    if (!club || !promo) return;
-    if (reg === "US") { cUS[club] = cUS[club] || { count:0, promo }; cUS[club].count++; }
-    if (reg === "CAN") { cCAN[club] = cCAN[club] || { count:0, promo }; cCAN[club].count++; }
+// SETUP LOGIC (Dropdowns)
+window.setupClub = function(data) {
+  const con = document.getElementById("clubDropdownList");
+  const ms = document.getElementById("monthSelect");
+  if(!con || !ms) return;
+  
+  con.innerHTML = `<label class="checkbox-item"><input type="checkbox" value="__ALL__" checked> All Clubs</label>`;
+  const clubs = [...new Set(data.map(r=>(r["club name"]||"").trim()).filter(Boolean))].sort();
+  clubs.forEach(c => {
+    const l = document.createElement("label");
+    l.className = "checkbox-item";
+    l.innerHTML = `<input type="checkbox" value="${c}" checked> ${c}`;
+    con.appendChild(l);
   });
 
-  const all = new Set([...Object.keys(cUS), ...Object.keys(cCAN)]);
-  const tots = {};
-  all.forEach(c => tots[c] = (cUS[c]?.count || 0) + (cCAN[c]?.count || 0));
+  const boxes = Array.from(con.querySelectorAll("input"));
+  const all = boxes[0];
+  all.addEventListener("change", e => { boxes.forEach(b => b.checked = e.target.checked); renderClub(); updateClubButton(); });
+  boxes.slice(1).forEach(b => b.addEventListener("change", () => {
+    all.checked = boxes.slice(1).every(x=>x.checked);
+    renderClub(); updateClubButton();
+  }));
 
-  const top = Object.entries(tots).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([c])=>c);
-  const names = top.map(c => {
-    const promo = cUS[c]?.promo || cCAN[c]?.promo || "";
-    return promo ? `${c} (${promo})` : c;
+  ms.innerHTML = '<option value="all">All Months</option>';
+  window.ST.months.forEach(m => {
+    const o = document.createElement("option");
+    o.value = m; o.textContent = window.monthLbl(m);
+    ms.appendChild(o);
   });
+  ms.onchange = renderClub;
+  
+  updateClubButton();
+  renderClub();
+};
 
-  Plotly.newPlot("topClubsChart", [
-    { name:"US", x: top.map(c => cUS[c]?.count || 0), y: names, type:"bar", orientation:"h", marker:{color:p.us}},
-    { name:"CAN", x: top.map(c => cCAN[c]?.count || 0), y: names, type:"bar", orientation:"h", marker:{color:p.can}}
-  ], {
-    ...window.lay("", "Usage"),
-    barmode: "group",
-    margin:{t:20,l:320,b:50,r:20},
-    height:350
-  }, window.pcfg);
+function updateClubButton() {
+  const con = document.getElementById("clubDropdownList");
+  const btn = document.getElementById("clubDropdownBtn");
+  if(!con || !btn) return;
+  const boxes = Array.from(con.querySelectorAll("input:not([value='__ALL__'])"));
+  const chk = boxes.filter(b=>b.checked).length;
+  btn.textContent = (chk === boxes.length) ? "All Clubs" : (chk === 0 ? "None Selected" : `${chk} Selected`);
 }
 
 window.resizeCharts = function() {
-  const plots = document.querySelectorAll('.js-plotly-plot');
-  plots.forEach(plot => {
-    Plotly.Plots.resize(plot);
-  });
-}
+  // ApexCharts handles resize automatically usually.
+};
