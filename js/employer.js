@@ -5,9 +5,9 @@ async function fetchCSV(url) {
 }
 
 async function renderEmployer() {
-  const con = document.getElementById("employerList");
+  const con = document.getElementById("employerGrid"); // TARGETING THE NEW GRID CONTAINER
   if(!con) return;
-  con.innerHTML = '<tr><td colspan="2" class="loading-cell">Processing...</td></tr>';
+  con.innerHTML = '<div style="grid-column: 1/-1; text-align:center; padding:40px; color:var(--text-muted);">Processing...</div>';
 
   try {
     const [gen, uaw] = await Promise.all([
@@ -44,12 +44,10 @@ async function renderEmployer() {
 
     processGeneric(gen.data, ['group', 'company', 'employer'], ['club', 'location']);
 
-    // --- 2. PROCESS UAW FORD (Restored Logic) ---
-    // Logic: Active if Date in Column J (Index 9) is less than 12 months old
+    // --- 2. PROCESS UAW FORD ---
     if (uaw.data && uaw.data.length > 0) {
       const headers = uaw.meta.fields || [];
       const dateCol = headers[9]; // Column J
-      // Fallback for club column search
       const clubCol = headers.find(h => h.toLowerCase().includes("club") || h.toLowerCase().includes("location")) || headers[0];
       
       const ONE_YEAR_MS = 365 * 24 * 60 * 60 * 1000;
@@ -59,37 +57,50 @@ async function renderEmployer() {
       uaw.data.forEach(row => {
         const dateStr = (row[dateCol] || "").trim();
         const clubName = (row[clubCol] || "Unknown Club").trim();
-
-        // Robust Date Parsing
         const d = new Date(dateStr);
         
-        // Active Check
         if (!isNaN(d) && (now - d) < ONE_YEAR_MS) {
            if (!stats[groupName]) stats[groupName] = { total: 0, clubs: {} };
-           
            stats[groupName].total++;
            stats[groupName].clubs[clubName] = (stats[groupName].clubs[clubName] || 0) + 1;
         }
       });
     }
 
-    // --- 3. RENDER ---
+    // --- 3. RENDER CARDS ---
     const sorted = Object.entries(stats).sort((a,b)=>b[1].total - a[1].total);
     
     if(!sorted.length) { 
-      con.innerHTML = '<tr><td colspan="2" style="text-align:center;padding:20px;color:var(--text-muted)">No Data Found</td></tr>'; 
+      con.innerHTML = '<div style="grid-column: 1/-1; text-align:center; padding:40px; color:var(--text-muted);">No Data Found</div>'; 
       return; 
     }
 
     con.innerHTML = sorted.map(([k,v]) => {
-      const clubs = Object.entries(v.clubs).sort((a,b)=>b[1]-a[1]).map(([cn,cc]) => 
-        `<tr><td style="padding-left:24px; color:var(--text-muted); font-size:13px">• ${cn}</td><td style="text-align:right; color:var(--text-muted); font-size:13px">${cc}</td></tr>`
-      ).join("");
-      return `<tr style="background:rgba(255,255,255,0.05)"><td style="font-weight:700">${k}</td><td style="text-align:right; font-weight:700">${v.total}</td></tr>` + clubs;
+      const clubList = Object.entries(v.clubs)
+        .sort((a,b)=>b[1]-a[1])
+        .map(([cn,cc]) => `
+          <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px; color:var(--text-muted);">
+            <span>• ${cn}</span>
+            <span>${cc}</span>
+          </div>
+        `).join("");
+
+      return `
+        <div class="employer-card" onclick="this.classList.toggle('expanded')">
+          <div class="emp-header">
+             <span class="emp-name">${k}</span>
+             <span class="emp-count">${v.total}</span>
+          </div>
+          <div class="emp-details">
+             <div style="font-size:11px; font-weight:700; text-transform:uppercase; margin-bottom:8px; color:var(--text-light);">Club Breakdown</div>
+             ${clubList}
+          </div>
+        </div>
+      `;
     }).join("");
 
   } catch(e) { 
     console.error(e);
-    con.innerHTML = '<tr><td colspan="2" style="color:var(--error); text-align:center">Error loading data</td></tr>'; 
+    con.innerHTML = '<div style="grid-column: 1/-1; color:var(--error); text-align:center">Error loading data</div>'; 
   }
 }

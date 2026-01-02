@@ -21,7 +21,6 @@ function renderCurrent(data) {
   const p = window.pal();
   const cmn = window.apexCommon();
   
-  // Metrics Calculation
   let total = 0, bcCount = 0, nrCount = 0;
   const tot = { US: 0, CAN: 0 };
   const bc = { US: 0, CAN: 0 };
@@ -32,17 +31,9 @@ function renderCurrent(data) {
     const m = (r["membership type"] || "").toUpperCase();
 
     total++;
-    
     if (reg in tot) tot[reg]++;
-
-    if (m.includes("BLACK")) {
-      bcCount++;
-      if (reg in bc) bc[reg]++;
-    }
-    if (m.includes("10NR")) {
-      nrCount++;
-      if (reg in nr) nr[reg]++;
-    }
+    if (m.includes("BLACK")) { bcCount++; if (reg in bc) bc[reg]++; }
+    if (m.includes("10NR")) { nrCount++; if (reg in nr) nr[reg]++; }
   });
 
   document.getElementById("kpiTotal").textContent = total.toLocaleString();
@@ -50,18 +41,13 @@ function renderCurrent(data) {
   document.getElementById("kpi10NR").textContent = nrCount.toLocaleString();
   document.getElementById("kpiRatio").textContent = total > 0 ? ((bcCount / total) * 100).toFixed(1) + "%" : "0.0%";
 
-  // -- REGIONAL BARS (With Visible Totals) --
   const barOpts = (name, dataObj) => ({
     ...cmn,
     chart: { type: 'bar', height: 260, toolbar: { show: false }, background: 'transparent' },
     colors: [p.us, p.can],
-    plotOptions: {
-      bar: { distributed: true, borderRadius: 6, columnWidth: '55%', dataLabels: { position: 'top' } }
-    },
-    dataLabels: {
-      enabled: true, offsetY: -20,
-      style: { fontSize: '12px', fontWeight: 800, colors: [p.text] }
-    },
+    stroke: { show: false },
+    plotOptions: { bar: { distributed: true, borderRadius: 6, columnWidth: '55%', dataLabels: { position: 'top' } } },
+    dataLabels: { enabled: true, offsetY: -20, style: { fontSize: '12px', fontWeight: 800, colors: [p.text] } },
     series: [{ name: name, data: [dataObj.US, dataObj.CAN] }],
     xaxis: { categories: ['US', 'CAN'], labels: { style: { colors: [p.text, p.text], fontWeight: 700 } }, axisBorder: {show:false}, axisTicks: {show:false} },
     grid: { show: false }
@@ -71,13 +57,11 @@ function renderCurrent(data) {
   renderApex("regionBCChart", barOpts("Black Card", bc));
   renderApex("region10NRChart", barOpts("10NR", nr));
 
-  // -- TRENDS --
   const mUS={}, mCAN={};
   data.forEach(r => {
     if(!isNaN(r.dateParsed)) {
       const reg = window.normReg(r["region"]);
       const k = window.monthKey(r.dateParsed);
-      
       if(reg==="US") mUS[k] = (mUS[k]||0)+1;
       if(reg==="CAN") mCAN[k] = (mCAN[k]||0)+1;
     }
@@ -88,17 +72,16 @@ function renderCurrent(data) {
     ...cmn,
     chart: { type: 'area', height: 300, toolbar: { show: false }, background: 'transparent' },
     colors: [color],
+    stroke: { curve: 'smooth', width: 3 },
     fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.4, opacityTo: 0.05, stops: [0, 100] } },
     dataLabels: { enabled: false },
-    stroke: { curve: 'smooth', width: 3 },
     series: [{ name: "Signups", data: vals }],
-    xaxis: { categories: cats, labels: { style: { colors: p.textMuted } } }
+    xaxis: { categories: cats, labels: { style: { colors: p.text } } }
   });
 
   renderApex("impactUS", trendOpts(p.us, kUS.map(window.monthLbl), kUS.map(k=>mUS[k])));
   renderApex("impactCAN", trendOpts(p.can, kCAN.map(window.monthLbl), kCAN.map(k=>mCAN[k])));
 
-  // -- PROMO --
   const pReg = { US:{}, CAN:{} };
   data.forEach(r => {
     const pn = (r["promotion name"]||"").trim();
@@ -113,19 +96,17 @@ function renderCurrent(data) {
   if(topP.length) {
     renderApex("promoChart", {
       ...cmn,
-      chart: { type: 'bar', height: 320, stacked: true, toolbar:{show:false}, background:'transparent' },
+      chart: { type: 'bar', height: 360, stacked: true, toolbar:{show:false}, background:'transparent' },
       colors: [p.us, p.can],
+      stroke: { show: false },
       plotOptions: { bar: { horizontal: true, borderRadius: 4, barHeight: '60%' } },
-      
-      // WHITE TEXT FIX FOR STACKED BARS
       dataLabels: { enabled: true, style: { colors: ['#ffffff'], fontSize: '12px', fontWeight: 600 } },
-      
       series: [
         { name: 'US', data: topP.map(n=>pReg.US[n]||0) },
         { name: 'CAN', data: topP.map(n=>pReg.CAN[n]||0) }
       ],
-      xaxis: { categories: topP, labels: { style: { colors: p.textMuted } } },
-      legend: { show: true, position: 'top' }
+      xaxis: { categories: topP, labels: { style: { colors: p.text } } },
+      legend: { show: true, position: 'top', labels: { colors: p.text } }
     });
   }
 }
@@ -145,14 +126,11 @@ function renderClub() {
   const sel = (all && all.checked) ? ["__ALL__"] : inputs.filter(i=>i.checked && i.value!=="__ALL__").map(i=>i.value);
   const month = document.getElementById("monthSelect").value;
 
-  // Filter Data
   let rows = window.ST.filtered.filter(r => {
-    // 1. Club Filter
     if (!sel.includes("__ALL__")) {
         const cName = (r["club name"]||"").trim();
         if (!sel.includes(cName)) return false;
     }
-    // 2. Month Filter
     if (month !== "all") {
         if (isNaN(r.dateParsed) || window.monthKey(r.dateParsed) !== month) return false;
     }
@@ -173,20 +151,25 @@ function renderClub() {
     return; 
   }
 
-  // Donut
-  const rCnt = {US:0, CAN:0};
-  rows.forEach(r => { const reg=window.normReg(r["region"]); if(rCnt[reg]!=null) rCnt[reg]++; });
+  // --- MEMBERSHIP MIX DONUT ---
   renderApex("clubRegionDonut", {
     ...cmn,
     chart: { type: 'donut', height: 260, background: 'transparent' },
-    labels: ['US', 'Canada'],
+    labels: ['Black Card', '10NR'],
     colors: [p.us, p.can],
-    series: [rCnt.US, rCnt.CAN],
+    series: [bc, nr],
+    stroke: { width: 0 },
     plotOptions: { pie: { donut: { size: '65%' } } },
-    legend: { show: true, position: 'bottom' }
+    dataLabels: {
+      enabled: true,
+      formatter: function (val, opts) {
+          return opts.w.config.series[opts.seriesIndex]; 
+      },
+      style: { fontSize: '13px', fontWeight: 700 }
+    },
+    legend: { show: true, position: 'bottom', labels: { colors: p.text } }
   });
 
-  // Trend
   const mData = {};
   rows.forEach(r => { if(!isNaN(r.dateParsed)) { const k=window.monthKey(r.dateParsed); mData[k]=(mData[k]||0)+1; }});
   const mKeys = Object.keys(mData).sort();
@@ -194,12 +177,12 @@ function renderClub() {
     ...cmn,
     chart: { type: 'area', height: 360, toolbar:{show:false}, background:'transparent' },
     colors: [p.us],
+    stroke: { curve: 'smooth', width: 3 },
     fill: { type: 'gradient', gradient: { shadeIntensity:1, opacityFrom:0.4, opacityTo:0.05 } },
     series: [{ name: "Signups", data: mKeys.map(k=>mData[k]) }],
-    xaxis: { categories: mKeys.map(window.monthLbl) }
+    xaxis: { categories: mKeys.map(window.monthLbl), labels: { style: { colors: p.text } } }
   });
 
-  // Usage
   const pCnt={};
   rows.forEach(r=>{ const pn=(r["promotion name"]||"").trim(); if(pn) pCnt[pn]=(pCnt[pn]||0)+1; });
   const topC = Object.entries(pCnt).sort((a,b)=>b[1]-a[1]).slice(0,5);
@@ -207,9 +190,10 @@ function renderClub() {
     ...cmn,
     chart: { type: 'bar', height: 260, toolbar:{show:false}, background:'transparent' },
     colors: [p.accent],
+    stroke: { show: false },
     plotOptions: { bar: { horizontal: true, borderRadius: 4, barHeight: '50%' } },
     series: [{ name: "Count", data: topC.map(t=>t[1]) }],
-    xaxis: { categories: topC.map(t=>t[0]) }
+    xaxis: { categories: topC.map(t=>t[0]), labels: { style: { colors: p.text } } }
   });
   
   renderTopClubs(rows);
@@ -232,19 +216,30 @@ function renderTopClubs(data) {
   
   renderApex("topClubsChart", {
     ...cmn,
-    chart: { type: 'bar', height: 360, stacked: true, toolbar:{show:false}, background:'transparent' },
+    // INCREASED HEIGHT FOR BETTER READABILITY
+    chart: { type: 'bar', height: 400, stacked: true, toolbar:{show:false}, background:'transparent' },
     colors: [p.us, p.can],
+    stroke: { show: false },
     plotOptions: { bar: { horizontal: true, borderRadius: 4, barHeight: '60%' } },
     series: [
       { name: 'US', data: top.map(c=>cUS[c]||0) },
       { name: 'CAN', data: top.map(c=>cCAN[c]||0) }
     ],
-    xaxis: { categories: top },
-    legend: { show: true, position: 'top' }
+    xaxis: { categories: top, labels: { style: { colors: p.text } } }, 
+    
+    // FIX: ADDED YAXIS MAXWIDTH TO PREVENT TEXT CUTOFF
+    yaxis: {
+      labels: {
+        maxWidth: 400,
+        style: { colors: p.text, fontSize: '12px' }
+      }
+    },
+    
+    legend: { show: true, position: 'top', labels: { colors: p.text } }
   });
 }
 
-// SETUP LOGIC (Dropdowns)
+// SETUP LOGIC
 window.setupClub = function(data) {
   const con = document.getElementById("clubDropdownList");
   const ms = document.getElementById("monthSelect");

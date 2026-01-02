@@ -29,21 +29,21 @@ function setStatus(msg, type) {
   }
 }
 
-// THEME COLORS (Matches CSS)
+// DYNAMIC PALETTE
 window.pal = function() {
   const s = getComputedStyle(document.body);
   const get = (v) => s.getPropertyValue(v).trim();
   return {
-    text: get('--text'),
-    textMuted: get('--text-muted'),
-    us: '#2563eb', 
-    can: '#7c3aed', 
-    accent: '#059669',
+    text: get('--text'),       
+    textMuted: get('--text-muted'),  
+    us: '#4f46e5',         // Indigo
+    can: '#0ea5e9',        // Sky
+    accent: '#10b981',     // Emerald
     bg: 'transparent'
   };
 };
 
-// APEXCHARTS COMMON CONFIG
+// APEXCHARTS CONFIG
 window.apexCommon = function() {
   const p = window.pal();
   return {
@@ -53,18 +53,40 @@ window.apexCommon = function() {
       animations: { enabled: true, easing: 'easeinout', speed: 600 }
     },
     dataLabels: { enabled: false },
-    stroke: { curve: 'smooth', width: 2 },
-    grid: { borderColor: 'rgba(128,128,128,0.1)', strokeDashArray: 4 },
-    legend: { show: false }, // We use custom legends or clean look
+    stroke: { show: false, curve: 'smooth', width: 2 }, 
+    grid: { 
+      borderColor: 'rgba(128,128,128,0.1)', 
+      strokeDashArray: 4 
+    },
+    legend: { 
+      show: false,
+      labels: { colors: p.text } // FORCE LEGEND TEXT TO MAIN COLOR
+    }, 
     xaxis: { 
-      labels: { style: { colors: p.textMuted, fontFamily: 'Plus Jakarta Sans, sans-serif' } },
+      labels: { 
+        style: { 
+          colors: p.text, // FORCE AXIS TEXT TO MAIN COLOR
+          fontFamily: 'Plus Jakarta Sans, sans-serif', 
+          fontWeight: 600,
+          fontSize: '11px'
+        } 
+      },
       axisBorder: { show: false },
       axisTicks: { show: false }
     },
     yaxis: { 
-      labels: { style: { colors: p.textMuted, fontFamily: 'Plus Jakarta Sans, sans-serif' } } 
+      labels: { 
+        style: { 
+          colors: p.text, // FORCE AXIS TEXT TO MAIN COLOR
+          fontFamily: 'Plus Jakarta Sans, sans-serif', 
+          fontWeight: 600 
+        } 
+      } 
     },
-    tooltip: { theme: document.body.classList.contains('dark') ? 'dark' : 'light' }
+    tooltip: { 
+      theme: document.body.classList.contains('dark') ? 'dark' : 'light',
+      style: { fontSize: '12px' }
+    }
   };
 };
 
@@ -95,7 +117,9 @@ window.loadData = function() {
           return o;
         });
 
+        // Filter valid promo codes
         window.ST.data = processed.filter(r => window.hasCode(r["promotion name"]));
+        
         window.ST.loaded = true;
         
         setStatus("System Ready", "success");

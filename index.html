@@ -10,6 +10,8 @@
 
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><path d='M30 30V70M30 50H50' stroke='%233b82f6' stroke-width='8' stroke-linecap='round'/><path d='M50 30V70L65 55L80 70V30' fill='none' stroke='%238b5cf6' stroke-width='8' stroke-linecap='round' stroke-linejoin='round'/><circle cx='65' cy='40' r='5' fill='%2310b981'/></svg>">
 </head>
@@ -56,13 +58,13 @@
           <select id="yearSelect" class="glass-select"><option value="all">All Years</option></select>
         </div>
         
-        <button onclick="exportCSV()" class="btn-glass">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Export CSV
+        <button onclick="exportPDF()" class="btn-glass">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          Export PDF
         </button>
         <button id="themeToggle" class="btn-glass">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-          Dark Mode
+          <svg id="themeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          <span id="themeText">Dark Mode</span>
         </button>
       </div>
 
@@ -150,7 +152,9 @@
         </div>
         <div class="control-group">
           <span>Month:</span>
-          <select id="monthSelect" class="glass-select inline"><option value="all">All Months</option></select>
+          <div class="select-wrapper-inline">
+            <select id="monthSelect" class="glass-select inline"><option value="all">All Months</option></select>
+          </div>
         </div>
       </div>
 
@@ -160,7 +164,8 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
           </div>
           <div class="kpi-content">
-            <h3>Filtered Members</h3><div class="val" id="ckpiTotal">—</div>
+            <h3>Selected Members</h3>
+            <div class="val" id="ckpiTotal">—</div>
           </div>
         </div>
         <div class="glass-panel kpi-card">
@@ -190,7 +195,7 @@
       </div>
 
       <div class="grid-2 mt-4">
-        <div class="glass-panel"><div class="legend">Regional Split</div><div id="clubRegionDonut" class="chart-container"></div></div>
+        <div class="glass-panel"><div class="legend">Membership Mix</div><div id="clubRegionDonut" class="chart-container"></div></div>
         <div class="glass-panel"><div class="legend">Top Codes</div><div id="clubUsage" class="chart-container"></div></div>
       </div>
       
@@ -206,12 +211,9 @@
     <div class="tab-content" id="employerPaid">
       <div class="glass-panel">
         <h3 class="panel-header">Employer-Sponsored Programs</h3>
-        <table class="glass-table">
-          <thead><tr><th>Company Name</th><th style="text-align:right;">Total Members</th></tr></thead>
-          <tbody id="employerList">
-            <tr><td colspan="2" class="loading-cell">Loading data...</td></tr>
-          </tbody>
-        </table>
+        <div id="employerGrid" class="employer-grid">
+          <div style="grid-column: 1/-1; text-align:center; padding:40px; color:var(--text-muted);">Loading...</div>
+        </div>
       </div>
     </div>
 
@@ -224,8 +226,19 @@
 
         <div class="glass-panel">
             <div class="legend">Directory</div>
-            <div class="scrollable-directory">
-                <ul id="partnersList" class="glass-list"></ul>
+            <div class="directory-grid">
+              <div class="dir-col">
+                <div class="legend header-west">WEST</div>
+                <ul id="listWest" class="glass-list scroll-sm"></ul>
+              </div>
+              <div class="dir-col">
+                <div class="legend header-can">CANADA</div>
+                <ul id="listCan" class="glass-list scroll-sm"></ul>
+              </div>
+              <div class="dir-col">
+                <div class="legend header-east">EAST</div>
+                <ul id="listEast" class="glass-list scroll-sm"></ul>
+              </div>
             </div>
         </div>
     </div>
