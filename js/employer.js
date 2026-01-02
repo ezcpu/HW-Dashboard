@@ -1,3 +1,17 @@
+// Helper for Accordion Behavior (Single Expand)
+window.toggleEmpCard = function(el) {
+  // 1. Close all OTHER cards
+  const all = document.querySelectorAll('.employer-card');
+  all.forEach(card => {
+    if (card !== el) {
+      card.classList.remove('expanded');
+    }
+  });
+
+  // 2. Toggle the CURRENT card
+  el.classList.toggle('expanded');
+};
+
 async function fetchCSV(url) {
   return new Promise(resolve => {
     Papa.parse(url, { download:true, header:true, skipEmptyLines:true, complete:resolve, error:()=>resolve({data:[], meta:{fields:[]}}) });
@@ -5,7 +19,7 @@ async function fetchCSV(url) {
 }
 
 async function renderEmployer() {
-  const con = document.getElementById("employerGrid"); // TARGETING THE NEW GRID CONTAINER
+  const con = document.getElementById("employerGrid"); 
   if(!con) return;
   con.innerHTML = '<div style="grid-column: 1/-1; text-align:center; padding:40px; color:var(--text-muted);">Processing...</div>';
 
@@ -67,7 +81,17 @@ async function renderEmployer() {
       });
     }
 
-    // --- 3. RENDER CARDS ---
+    // --- 3. CALCULATE GRAND TOTAL ---
+    let grandTotal = 0;
+    Object.values(stats).forEach(v => grandTotal += v.total);
+
+    // Update Header Text with Total
+    const headerEl = document.querySelector("#employerPaid .panel-header");
+    if(headerEl) {
+      headerEl.textContent = `Employer-Sponsored Programs (Total: ${grandTotal.toLocaleString()})`;
+    }
+
+    // --- 4. RENDER CARDS ---
     const sorted = Object.entries(stats).sort((a,b)=>b[1].total - a[1].total);
     
     if(!sorted.length) { 
@@ -86,7 +110,7 @@ async function renderEmployer() {
         `).join("");
 
       return `
-        <div class="employer-card" onclick="this.classList.toggle('expanded')">
+        <div class="employer-card" onclick="window.toggleEmpCard(this)">
           <div class="emp-header">
              <span class="emp-name">${k}</span>
              <span class="emp-count">${v.total}</span>

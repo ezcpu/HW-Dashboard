@@ -22,7 +22,6 @@ window.exportPDF = function() {
       p.region, p.name, p.pay || "N/A", p.link ? "Yes" : "No"
     ]);
   } else if (activeTab === "employerPaid") {
-    // NEW: Scrape Cards instead of Table
     head = [['Company / Group', 'Total Members']];
     const cards = document.querySelectorAll(".employer-card");
     if(cards.length) {
@@ -56,7 +55,6 @@ window.exportPDF = function() {
   doc.save(`HW_Report_${activeTab}_${new Date().toISOString().slice(0,10)}.pdf`);
 };
 
-// ... (Rest of main.js remains unchanged) ...
 // UI Helpers
 function renderEmptyState(id, msg) {
   const el = document.getElementById(id);
@@ -64,18 +62,67 @@ function renderEmptyState(id, msg) {
 }
 
 function clearFilters() {
-  const ms = document.getElementById("monthSelect"); if(ms) ms.value = "all";
-  const con = document.getElementById("clubDropdownList");
-  if (con) { con.querySelectorAll("input").forEach(i => i.checked = (i.value === "__ALL__")); if (typeof updateClubButton === 'function') updateClubButton(); }
+  const mList = document.getElementById("monthDropdownList");
+  if(mList) {
+    mList.querySelectorAll("input").forEach(i => i.checked = (i.value === "__ALL__"));
+    if(typeof updateMonthButton === 'function') updateMonthButton();
+  }
+
+  const cList = document.getElementById("clubDropdownList");
+  if (cList) { 
+    cList.querySelectorAll("input").forEach(i => i.checked = (i.value === "__ALL__")); 
+    if (typeof updateClubButton === 'function') updateClubButton(); 
+  }
+  
   if (typeof renderClub === 'function') renderClub();
 }
 
-function toggleClubDropdown(e) { if(e) e.stopPropagation(); document.getElementById("clubDropdownList")?.classList.toggle("show"); }
+// DROPDOWN TOGGLE FUNCTIONS
+function toggleClubDropdown(e) { 
+  if(e) e.stopPropagation(); 
+  const cList = document.getElementById("clubDropdownList");
+  const cBtn = document.getElementById("clubDropdownBtn");
+  const mList = document.getElementById("monthDropdownList");
+  const mBtn = document.getElementById("monthDropdownBtn");
 
+  // Close Month
+  if(mList) mList.classList.remove("show");
+  if(mBtn) mBtn.classList.remove("active");
+
+  // Toggle Club
+  if(cList) cList.classList.toggle("show");
+  if(cBtn) cBtn.classList.toggle("active");
+}
+
+function toggleMonthDropdown(e) { 
+  if(e) e.stopPropagation(); 
+  const cList = document.getElementById("clubDropdownList");
+  const cBtn = document.getElementById("clubDropdownBtn");
+  const mList = document.getElementById("monthDropdownList");
+  const mBtn = document.getElementById("monthDropdownBtn");
+
+  // Close Club
+  if(cList) cList.classList.remove("show");
+  if(cBtn) cBtn.classList.remove("active");
+
+  // Toggle Month
+  if(mList) mList.classList.toggle("show");
+  if(mBtn) mBtn.classList.toggle("active");
+}
+
+// CLOSE ON CLICK OUTSIDE
 window.addEventListener('click', e => {
-  const m = document.getElementById("clubDropdownList");
-  const b = document.getElementById("clubDropdownBtn");
-  if (m && m.classList.contains('show') && !m.contains(e.target) && !b.contains(e.target)) m.classList.remove('show');
+  const dropdowns = [
+    { list: document.getElementById("clubDropdownList"), btn: document.getElementById("clubDropdownBtn") },
+    { list: document.getElementById("monthDropdownList"), btn: document.getElementById("monthDropdownBtn") }
+  ];
+
+  dropdowns.forEach(({list, btn}) => {
+    if (list && list.classList.contains('show') && !list.contains(e.target) && !btn.contains(e.target)) {
+      list.classList.remove('show');
+      btn.classList.remove('active');
+    }
+  });
 });
 
 // Setup & Navigation
@@ -92,13 +139,26 @@ window.setupGlobalYear = function() {
 
 window.updateDashboard = function() {
   const yr = document.getElementById("yearSelect")?.value || "all";
+  
+  // 1. Filter Data
   window.ST.filtered = window.ST.data.filter(r => {
     if (yr === "all") return true;
     const d = r.dateParsed;
     if (isNaN(d) || String(d.getFullYear()) !== yr) return false;
     return true;
   });
-  window.ST.months = [...new Set(window.ST.filtered.map(r => isNaN(r.dateParsed) ? null : window.monthKey(r.dateParsed)).filter(Boolean))].sort();
+
+  // 2. Generate Months (Descending)
+  window.ST.months = [...new Set(window.ST.filtered.map(r => 
+    isNaN(r.dateParsed) ? null : window.monthKey(r.dateParsed)
+  ).filter(Boolean))].sort().reverse(); 
+  
+  // 3. Reset Filters
+  const clubList = document.getElementById("clubDropdownList");
+  if(clubList) clubList.innerHTML = "";
+  
+  const monthList = document.getElementById("monthDropdownList");
+  if(monthList) monthList.innerHTML = "";
   
   const active = document.querySelector(".tab-content.active");
   if (active) openTab(active.id);
@@ -144,10 +204,7 @@ document.addEventListener("DOMContentLoaded", () => {
       document.body.classList.toggle("dark");
       localStorage.setItem("theme", document.body.classList.contains("dark") ? "dark" : "light");
       updateThemeUI();
-      
-      if (typeof window.updateDashboard === 'function') {
-        window.updateDashboard();
-      }
+      if (typeof window.updateDashboard === 'function') window.updateDashboard();
     };
   }
 

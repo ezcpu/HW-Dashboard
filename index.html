@@ -151,11 +151,12 @@
           </div>
         </div>
         <div class="control-group">
-          <span>Month:</span>
-          <div class="select-wrapper-inline">
-            <select id="monthSelect" class="glass-select inline"><option value="all">All Months</option></select>
-          </div>
-        </div>
+  <span>Month:</span>
+  <div class="dropdown-container">
+    <button id="monthDropdownBtn" class="dropdown-trigger" onclick="toggleMonthDropdown(event)">All Months</button>
+    <div id="monthDropdownList" class="glass-dropdown-menu"></div>
+  </div>
+</div>
       </div>
 
       <div class="kpi-grid mt-4">

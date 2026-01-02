@@ -17,6 +17,7 @@ function renderApex(id, options) {
   window.CHART_INSTANCES[id] = chart;
 }
 
+// --- OVERVIEW TAB RENDER ---
 function renderCurrent(data) {
   const p = window.pal();
   const cmn = window.apexCommon();
@@ -36,10 +37,10 @@ function renderCurrent(data) {
     if (m.includes("10NR")) { nrCount++; if (reg in nr) nr[reg]++; }
   });
 
-  document.getElementById("kpiTotal").textContent = total.toLocaleString();
-  document.getElementById("kpiBC").textContent = bcCount.toLocaleString();
-  document.getElementById("kpi10NR").textContent = nrCount.toLocaleString();
-  document.getElementById("kpiRatio").textContent = total > 0 ? ((bcCount / total) * 100).toFixed(1) + "%" : "0.0%";
+  updateVal("kpiTotal", total.toLocaleString());
+  updateVal("kpiBC", bcCount.toLocaleString());
+  updateVal("kpi10NR", nrCount.toLocaleString());
+  updateVal("kpiRatio", total > 0 ? ((bcCount / total) * 100).toFixed(1) + "%" : "0.0%");
 
   const barOpts = (name, dataObj) => ({
     ...cmn,
@@ -111,47 +112,196 @@ function renderCurrent(data) {
   }
 }
 
+// --- CLUB INSIGHTS LOGIC ---
+
+// 1. Build Month Dropdown (Checkboxes)
+window.updateMonthDropdown = function() {
+  const con = document.getElementById("monthDropdownList");
+  if (!con) return;
+
+  // Only build if empty
+  if (con.innerHTML !== "") return;
+
+  const months = window.ST.months || [];
+  
+  let html = `
+    <label class="checkbox-item" style="font-weight:700; border-bottom:1px solid var(--glass-border); margin-bottom:4px; padding-bottom:8px;">
+      <input type="checkbox" value="__ALL__" checked> All Months
+    </label>
+  `;
+  
+  months.forEach(m => {
+    html += `<label class="checkbox-item"><input type="checkbox" value="${m}" checked> ${window.monthLbl(m)}</label>`;
+  });
+  
+  con.innerHTML = html;
+
+  const boxes = Array.from(con.querySelectorAll("input"));
+  const all = boxes[0];
+
+  if(all) {
+    all.addEventListener("change", e => {
+      boxes.forEach(b => b.checked = e.target.checked);
+      updateMonthButton();
+      renderClub();
+    });
+
+    boxes.slice(1).forEach(b => b.addEventListener("change", () => {
+      all.checked = boxes.slice(1).every(x => x.checked);
+      updateMonthButton();
+      renderClub();
+    }));
+  }
+
+  updateMonthButton();
+};
+
+// 2. Update Month Button Text
+window.updateMonthButton = function() {
+  const con = document.getElementById("monthDropdownList");
+  const btn = document.getElementById("monthDropdownBtn");
+  if(!con || !btn) return;
+  
+  const boxes = Array.from(con.querySelectorAll("input:not([value='__ALL__'])"));
+  const checked = boxes.filter(b=>b.checked);
+  
+  if (checked.length === boxes.length) {
+    btn.textContent = "All Months";
+  } else if (checked.length === 0) {
+    btn.textContent = "Select Months";
+  } else if (checked.length === 1) {
+    const val = checked[0].value;
+    btn.textContent = window.monthLbl(val);
+  } else {
+    btn.textContent = `${checked.length} Months Selected`;
+  }
+};
+
+// 3. Setup Club Filter
+window.setupClub = function(data) {
+  const con = document.getElementById("clubDropdownList");
+  if(!con) return;
+  
+  if (con.innerHTML === "") {
+    const clubs = [...new Set(data.map(r=>(r["club name"]||"").trim()).filter(Boolean))].sort();
+    
+    let html = `
+      <label class="checkbox-item" style="font-weight:700; border-bottom:1px solid var(--glass-border); margin-bottom:4px; padding-bottom:8px;">
+        <input type="checkbox" value="__ALL__" checked> Select All
+      </label>
+    `;
+    
+    clubs.forEach(c => {
+      html += `<label class="checkbox-item"><input type="checkbox" value="${c}" checked> ${c}</label>`;
+    });
+    con.innerHTML = html;
+
+    const boxes = Array.from(con.querySelectorAll("input"));
+    const all = boxes[0];
+
+    if(all) {
+      all.addEventListener("change", e => { 
+        boxes.forEach(b => b.checked = e.target.checked); 
+        updateClubButton(); 
+        renderClub(); 
+      });
+
+      boxes.slice(1).forEach(b => b.addEventListener("change", () => {
+        all.checked = boxes.slice(1).every(x => x.checked);
+        updateClubButton();
+        renderClub();
+      }));
+    }
+  }
+
+  // Trigger Month Setup
+  window.updateMonthDropdown();
+  updateClubButton();
+  renderClub();
+};
+
+function updateClubButton() {
+  const con = document.getElementById("clubDropdownList");
+  const btn = document.getElementById("clubDropdownBtn");
+  if(!con || !btn) return;
+  
+  const boxes = Array.from(con.querySelectorAll("input:not([value='__ALL__'])"));
+  const checked = boxes.filter(b=>b.checked);
+  
+  if (checked.length === boxes.length) {
+    btn.textContent = "All Clubs";
+  } else if (checked.length === 0) {
+    btn.textContent = "Select Clubs";
+  } else if (checked.length === 1) {
+    btn.textContent = checked[0].value;
+  } else {
+    btn.textContent = `${checked.length} Clubs Selected`;
+  }
+}
+
+// 4. Main Render Function
 function renderClub() {
   const p = window.pal();
   const cmn = window.apexCommon();
-  const con = document.getElementById("clubDropdownList");
+  const clubCon = document.getElementById("clubDropdownList");
+  const monthCon = document.getElementById("monthDropdownList");
   
-  if(!con || con.children.length === 0) { 
+  // Safety: If HTML missing, don't crash
+  if(!clubCon || !monthCon) return;
+
+  // Initialize if empty
+  if(clubCon.children.length === 0) { 
     if(window.ST.filtered && window.ST.filtered.length > 0) setupClub(window.ST.filtered); 
     return; 
   }
 
-  const inputs = Array.from(con.querySelectorAll("input"));
-  const all = inputs.find(i=>i.value==="__ALL__");
-  const sel = (all && all.checked) ? ["__ALL__"] : inputs.filter(i=>i.checked && i.value!=="__ALL__").map(i=>i.value);
-  const month = document.getElementById("monthSelect").value;
+  // A. Get Selected Clubs
+  const cInputs = Array.from(clubCon.querySelectorAll("input"));
+  const cAll = cInputs.find(i=>i.value==="__ALL__");
+  const allowedClubs = (cAll && cAll.checked) 
+    ? null 
+    : cInputs.filter(i => i.checked && i.value !== "__ALL__").map(i => i.value);
 
+  // B. Get Selected Months
+  const mInputs = Array.from(monthCon.querySelectorAll("input"));
+  const mAll = mInputs.find(i=>i.value==="__ALL__");
+  const allowedMonths = (mAll && mAll.checked) 
+    ? null 
+    : mInputs.filter(i => i.checked && i.value !== "__ALL__").map(i => i.value);
+
+  // C. Filter Data
   let rows = window.ST.filtered.filter(r => {
-    if (!sel.includes("__ALL__")) {
+    // Check Club
+    if (allowedClubs !== null) {
         const cName = (r["club name"]||"").trim();
-        if (!sel.includes(cName)) return false;
+        if (!allowedClubs.includes(cName)) return false;
     }
-    if (month !== "all") {
-        if (isNaN(r.dateParsed) || window.monthKey(r.dateParsed) !== month) return false;
+    // Check Month
+    if (allowedMonths !== null) {
+        if (isNaN(r.dateParsed)) return false;
+        const k = window.monthKey(r.dateParsed);
+        if (!allowedMonths.includes(k)) return false;
     }
     return true;
   });
 
+  // D. KPIs
   const total = rows.length;
   const bc = rows.filter(r=>(r["membership type"]||"").toUpperCase().includes("BLACK")).length;
   const nr = rows.filter(r=>(r["membership type"]||"").toUpperCase().includes("10NR")).length;
   
-  document.getElementById("ckpiTotal").textContent = total.toLocaleString();
-  document.getElementById("ckpiBC").textContent = bc.toLocaleString();
-  document.getElementById("ckpi10NR").textContent = nr.toLocaleString();
-  document.getElementById("ckpiRatio").textContent = total>0 ? ((bc/total)*100).toFixed(1)+"%" : "0%";
+  updateVal("ckpiTotal", total.toLocaleString());
+  updateVal("ckpiBC", bc.toLocaleString());
+  updateVal("ckpi10NR", nr.toLocaleString());
+  updateVal("ckpiRatio", total > 0 ? ((bc/total)*100).toFixed(1)+"%" : "0%");
 
-  if(total===0) { 
-    ['clubRegionDonut','clubTrend','clubUsage'].forEach(id => destroyChart(id));
+  // E. Charts
+  if(total === 0) { 
+    ['clubRegionDonut','clubTrend','clubUsage','topClubsChart'].forEach(id => destroyChart(id));
     return; 
   }
 
-  // --- MEMBERSHIP MIX DONUT ---
+  // Donut
   renderApex("clubRegionDonut", {
     ...cmn,
     chart: { type: 'donut', height: 260, background: 'transparent' },
@@ -162,16 +312,20 @@ function renderClub() {
     plotOptions: { pie: { donut: { size: '65%' } } },
     dataLabels: {
       enabled: true,
-      formatter: function (val, opts) {
-          return opts.w.config.series[opts.seriesIndex]; 
-      },
+      formatter: function (val, opts) { return opts.w.config.series[opts.seriesIndex]; },
       style: { fontSize: '13px', fontWeight: 700 }
     },
     legend: { show: true, position: 'bottom', labels: { colors: p.text } }
   });
 
+  // Trend
   const mData = {};
-  rows.forEach(r => { if(!isNaN(r.dateParsed)) { const k=window.monthKey(r.dateParsed); mData[k]=(mData[k]||0)+1; }});
+  rows.forEach(r => { 
+    if(!isNaN(r.dateParsed)) { 
+      const k = window.monthKey(r.dateParsed); 
+      mData[k] = (mData[k]||0)+1; 
+    }
+  });
   const mKeys = Object.keys(mData).sort();
   renderApex("clubTrend", {
     ...cmn,
@@ -183,6 +337,7 @@ function renderClub() {
     xaxis: { categories: mKeys.map(window.monthLbl), labels: { style: { colors: p.text } } }
   });
 
+  // Top Codes
   const pCnt={};
   rows.forEach(r=>{ const pn=(r["promotion name"]||"").trim(); if(pn) pCnt[pn]=(pCnt[pn]||0)+1; });
   const topC = Object.entries(pCnt).sort((a,b)=>b[1]-a[1]).slice(0,5);
@@ -216,7 +371,6 @@ function renderTopClubs(data) {
   
   renderApex("topClubsChart", {
     ...cmn,
-    // INCREASED HEIGHT FOR BETTER READABILITY
     chart: { type: 'bar', height: 400, stacked: true, toolbar:{show:false}, background:'transparent' },
     colors: [p.us, p.can],
     stroke: { show: false },
@@ -226,63 +380,14 @@ function renderTopClubs(data) {
       { name: 'CAN', data: top.map(c=>cCAN[c]||0) }
     ],
     xaxis: { categories: top, labels: { style: { colors: p.text } } }, 
-    
-    // FIX: ADDED YAXIS MAXWIDTH TO PREVENT TEXT CUTOFF
-    yaxis: {
-      labels: {
-        maxWidth: 400,
-        style: { colors: p.text, fontSize: '12px' }
-      }
-    },
-    
+    yaxis: { labels: { maxWidth: 400, style: { colors: p.text, fontSize: '12px' } } },
     legend: { show: true, position: 'top', labels: { colors: p.text } }
   });
 }
 
-// SETUP LOGIC
-window.setupClub = function(data) {
-  const con = document.getElementById("clubDropdownList");
-  const ms = document.getElementById("monthSelect");
-  if(!con || !ms) return;
-  
-  con.innerHTML = `<label class="checkbox-item"><input type="checkbox" value="__ALL__" checked> All Clubs</label>`;
-  const clubs = [...new Set(data.map(r=>(r["club name"]||"").trim()).filter(Boolean))].sort();
-  clubs.forEach(c => {
-    const l = document.createElement("label");
-    l.className = "checkbox-item";
-    l.innerHTML = `<input type="checkbox" value="${c}" checked> ${c}`;
-    con.appendChild(l);
-  });
-
-  const boxes = Array.from(con.querySelectorAll("input"));
-  const all = boxes[0];
-  all.addEventListener("change", e => { boxes.forEach(b => b.checked = e.target.checked); renderClub(); updateClubButton(); });
-  boxes.slice(1).forEach(b => b.addEventListener("change", () => {
-    all.checked = boxes.slice(1).every(x=>x.checked);
-    renderClub(); updateClubButton();
-  }));
-
-  ms.innerHTML = '<option value="all">All Months</option>';
-  window.ST.months.forEach(m => {
-    const o = document.createElement("option");
-    o.value = m; o.textContent = window.monthLbl(m);
-    ms.appendChild(o);
-  });
-  ms.onchange = renderClub;
-  
-  updateClubButton();
-  renderClub();
-};
-
-function updateClubButton() {
-  const con = document.getElementById("clubDropdownList");
-  const btn = document.getElementById("clubDropdownBtn");
-  if(!con || !btn) return;
-  const boxes = Array.from(con.querySelectorAll("input:not([value='__ALL__'])"));
-  const chk = boxes.filter(b=>b.checked).length;
-  btn.textContent = (chk === boxes.length) ? "All Clubs" : (chk === 0 ? "None Selected" : `${chk} Selected`);
-}
+// UI HELPER
+function updateVal(id, v) { const e=document.getElementById(id); if(e) e.textContent=v; }
 
 window.resizeCharts = function() {
-  // ApexCharts handles resize automatically usually.
+  // Optional resize logic
 };
