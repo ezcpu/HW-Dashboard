@@ -106,12 +106,13 @@ body.dark .tab-button:hover { background: rgba(255,255,255,0.05); }
 body.dark .btn-glass { background: rgba(255,255,255,0.05); }
 .btn-glass:hover { border-color: var(--primary); color: var(--primary); transform: translateY(-1px); }
 
+/* SHARED STYLES FOR NATIVE SELECT & CUSTOM DROPDOWN */
 .glass-select, .dropdown-trigger {
   width: 100%; 
   padding: 9px 12px; 
   border-radius: 6px; 
   border: 1px solid var(--glass-border);
-  background: var(--glass-bg); 
+  background-color: var(--glass-bg); 
   color: var(--text); 
   font-weight: 600; 
   cursor: pointer; 
@@ -119,19 +120,54 @@ body.dark .btn-glass { background: rgba(255,255,255,0.05); }
   box-shadow: var(--glass-shadow);
   display: flex; 
   align-items: center;
+  justify-content: space-between;
   min-height: 38px;
   font-family: inherit;
   position: relative;
+  transition: all 0.2s ease;
 }
-.glass-select { appearance: none; }
-body.dark .glass-select, body.dark .dropdown-trigger { background: rgba(255,255,255,0.05); }
 
-.glass-select.inline, .dropdown-trigger { min-width: 180px; text-align: left; justify-content: space-between; }
-.dropdown-trigger::after {
-  content: ''; display: inline-block; width: 0; height: 0; 
-  border-left: 4px solid transparent; border-right: 4px solid transparent;
-  border-top: 4px solid var(--text-muted); margin-left: 8px;
+/* 1. FIX THE NATIVE SELECT (YEAR) */
+.glass-select { 
+  appearance: none; -webkit-appearance: none; -moz-appearance: none; 
+  padding-right: 32px; /* Space for arrow */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
 }
+
+/* 2. FIX THE CUSTOM DROPDOWN ARROW (Replace CSS Triangle with matching SVG) */
+.dropdown-trigger::after {
+  content: ''; 
+  display: block; 
+  width: 16px; height: 16px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  transition: transform 0.2s ease;
+  margin-left: 8px;
+}
+.dropdown-trigger.active { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1); }
+.dropdown-trigger.active::after { transform: rotate(180deg); }
+
+/* 3. FIX DARK MODE COLORS & ICONS */
+body.dark .glass-select, 
+body.dark .dropdown-trigger { 
+  background-color: rgba(30, 41, 59, 0.6); /* Better contrast than white 0.05 */
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Update Arrows to Light Grey in Dark Mode */
+body.dark .glass-select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+}
+body.dark .dropdown-trigger::after {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+}
+
+/* Hover Effects */
+.glass-select:hover, .dropdown-trigger:hover { border-color: var(--text-muted); }
+body.dark .glass-select:hover, body.dark .dropdown-trigger:hover { border-color: var(--text-muted); }
 
 /* --- FIXED DROPDOWN STYLES --- */
 /* --- DROPDOWN ANIMATIONS & STYLING --- */
