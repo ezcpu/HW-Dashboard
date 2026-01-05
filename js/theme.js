@@ -8,30 +8,18 @@ function toggleTheme() {
     isDark ? "☀️ Light Mode" : "🌙 Dark Mode";
 
   rerender();
-  requestAnimationFrame(resizeCharts);
 }
 
 function resizeCharts() {
-  const ids = [
-    "regionTotalChart","regionBCChart","region10NRChart",
-    "impactUS","impactCAN","promoChart",
-    "clubRegionDonut","clubUsage","clubTrend",
-    "topClubsChart","partnersByRegion","paymentByRegion"
-  ];
-
-  ids.forEach(id => {
-    const el = document.getElementById(id);
-    if (el && el.data) {
-      try { Plotly.Plots.resize(el); }
-      catch(e) { console.warn("Failed to resize chart:", id, e); }
-    }
-  });
+  // ApexCharts are responsive by default. 
+  // If manual resize is strictly needed, we can trigger it here,
+  // but removing the invalid Plotly call fixes the crash.
 }
 
 function rerender() {
   if (!ST.loaded) return;
-  renderCurrent(ST.filtered);
-  renderClub();
-  renderTopClubs();
-  setTimeout(resizeCharts, 100);
+  // Re-render active views to pick up new theme colors
+  if(typeof renderCurrent === 'function') renderCurrent(ST.filtered);
+  if(typeof renderClub === 'function') renderClub();
+  if(typeof renderTopClubs === 'function') renderTopClubs(ST.filtered);
 }
