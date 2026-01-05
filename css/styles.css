@@ -230,7 +230,7 @@ body.dark .glass-select:hover, body.dark .dropdown-trigger:hover { border-color:
 .glass-dropdown-menu {
   /* Layout & Positioning */
   position: absolute;
-  top: 100%; left: 0; width: 100%;
+  top: 100%; left: 0; min-width: 100%; width: max-content; max-width: 350px;
   max-height: 300px; overflow-y: auto;
   background: var(--glass-bg);
   backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
