@@ -20,65 +20,57 @@
 <div class="app-background"></div>
 
 <div class="app-container">
-  <aside class="sidebar">
-    <div class="sidebar-header">
-      <div class="logo-icon">
-        <svg width="40" height="40" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-          <path d="M30 30V70M30 50H50" stroke="#3b82f6" stroke-width="8" stroke-linecap="round" />
-          <path d="M50 30V70L65 55L80 70V30" fill="none" stroke="#8b5cf6" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" />
-          <circle cx="65" cy="40" r="5" fill="#10b981" />
-        </svg>
-      </div>
-      <h1 class="sidebar-title">H&W Dashboard</h1>
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <div class="logo-icon">
+      <svg width="40" height="40" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <path d="M30 30V70M30 50H50" stroke="#3b82f6" stroke-width="8" stroke-linecap="round" />
+        <path d="M50 30V70L65 55L80 70V30" fill="none" stroke="#8b5cf6" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" />
+        <circle cx="65" cy="40" r="5" fill="#10b981" />
+      </svg>
     </div>
+    <h1 class="sidebar-title">H&W Dashboard</h1>
+  </div>
 
-    <nav class="sidebar-nav" role="tablist">
-      <button class="tab-button active" onclick="openTab('current')">
-        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-        Overview
-      </button>
-      <button class="tab-button" onclick="openTab('clubInsights')">
-        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18"/><path d="M5 21V7l8-4 8 4v14"/><path d="M17 21v-8.5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0-.5.5V21"/><path d="M9 10a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2.5a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1V10z"/></svg>
-        Club Insights
-      </button>
-      <button class="tab-button" onclick="openTab('employerPaid')">
-        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
-        Employers
-      </button>
-      <button class="tab-button" onclick="openTab('active')">
-        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        Partners
-      </button>
-    </nav>
-
-    <div class="sidebar-footer">
-      <div class="sidebar-controls">
-        <label class="sidebar-label">Calander Year</label>
-        <div class="select-wrapper">
-          <select id="yearSelect" class="glass-select"><option value="all">All Years</option></select>
-        </div>
-        
-        <button onclick="exportPDF()" class="btn-glass">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-          Export PDF
-        </button>
-        <button id="themeToggle" class="btn-glass">
-          <svg id="themeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-          <span id="themeText">Dark Mode</span>
-        </button>
-      </div>
-
-      <div class="team-status">
-        <div class="status-item">
-          <span class="status-indicator" id="statusIndicator"></span>
-          <span id="loadStatus">System Ready</span>
-        </div>
-        <div id="lastUpdated" style="display:none; margin-top: 6px;">
-          <span id="lastUpdatedText" style="opacity:0.7">—</span>
-        </div>
-      </div>
+  <div class="sidebar-controls" style="margin-bottom: 24px;">
+    <label class="sidebar-label">Calendar Year</label>
+    <div class="select-wrapper">
+      <select id="yearSelect" class="glass-select"><option value="all">All Years</option></select>
     </div>
-  </aside>
+  </div>
+
+  <nav class="sidebar-nav" role="tablist">
+    <button class="tab-button active" onclick="openTab('current')">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      Overview
+    </button>
+    <button class="tab-button" onclick="openTab('clubInsights')">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18"/><path d="M5 21V7l8-4 8 4v14"/><path d="M17 21v-8.5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0-.5.5V21"/><path d="M9 10a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2.5a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1V10z"/></svg>
+      Club Insights
+    </button>
+    <button class="tab-button" onclick="openTab('employerPaid')">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+      Employers
+    </button>
+    <button class="tab-button" onclick="openTab('active')">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Partners
+    </button>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="sidebar-controls">
+      <button onclick="exportPDF()" class="btn-glass">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        Export PDF
+      </button>
+      <button id="themeToggle" class="btn-glass">
+        <svg id="themeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        <span id="themeText">Dark Mode</span>
+      </button>
+    </div>
+  </div>
+</aside>
 
   <main class="main-content">
     
