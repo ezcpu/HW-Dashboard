@@ -230,8 +230,10 @@ body.dark .glass-select:hover, body.dark .dropdown-trigger:hover { border-color:
 .glass-dropdown-menu {
   /* Layout & Positioning */
   position: absolute;
-  top: 100%; left: 0; min-width: 100%; width: max-content; max-width: 350px;
+  top: 100%; left: 0; 
+  min-width: 100%; width: max-content; max-width: 350px; /* Width Fixes */
   max-height: 300px; overflow-y: auto;
+  
   background: var(--glass-bg);
   backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
   border: 1px solid var(--glass-border);
@@ -246,6 +248,10 @@ body.dark .glass-select:hover, body.dark .dropdown-trigger:hover { border-color:
   /* Animation Setup */
   transform-origin: top center;
 }
+
+.glass-dropdown-menu::-webkit-scrollbar { width: 5px; }
+.glass-dropdown-menu::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
+body.dark .glass-dropdown-menu::-webkit-scrollbar-thumb { background-color: #475569; }
 
 /* 7. Show State (Triggers Animation) */
 .glass-dropdown-menu.show { 
