@@ -274,6 +274,7 @@ body.dark .glass-select:hover, body.dark .dropdown-trigger:hover { border-color:
   cursor: pointer;
   border-radius: 4px;
   transition: 0.1s;
+  white-space: nowrap;
 }
 .checkbox-item:hover { background: rgba(0,0,0,0.05); }
 body.dark .checkbox-item:hover { background: rgba(255,255,255,0.05); }
