@@ -135,6 +135,7 @@ window.setupGlobalYear = function() {
   sel.innerHTML = '<option value="all">All Years</option>';
   sorted.forEach(y => { const o = document.createElement("option"); o.value = y; o.textContent = y; sel.appendChild(o); });
   sel.onchange = window.updateDashboard;
+  sel.value = "2026";
 };
 
 window.updateDashboard = function() {
