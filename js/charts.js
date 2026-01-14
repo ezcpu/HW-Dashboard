@@ -60,7 +60,7 @@ function renderCurrent(data) {
 
   const mUS={}, mCAN={};
   data.forEach(r => {
-    if(!isNaN(r.dateParsed)) {
+    if(r.dateParsed instanceof Date && !isNaN(r.dateParsed.getTime())) {
       const reg = window.normReg(r["region"]);
       const k = window.monthKey(r.dateParsed);
       if(reg==="US") mUS[k] = (mUS[k]||0)+1;
@@ -131,7 +131,7 @@ window.updateMonthDropdown = function() {
   `;
   
   months.forEach(m => {
-    html += `<label class="checkbox-item"><input type="checkbox" value="${m}" checked> ${window.monthLbl(m)}</label>`;
+    html += `<label class="checkbox-item"><input type="checkbox" value="${window.escapeHtml(m)}" checked> ${window.escapeHtml(window.monthLbl(m))}</label>`;
   });
   
   con.innerHTML = html;
@@ -192,7 +192,7 @@ window.setupClub = function(data) {
     `;
     
     clubs.forEach(c => {
-      html += `<label class="checkbox-item"><input type="checkbox" value="${c}" checked> ${c}</label>`;
+      html += `<label class="checkbox-item"><input type="checkbox" value="${window.escapeHtml(c)}" checked> ${window.escapeHtml(c)}</label>`;
     });
     con.innerHTML = html;
 
@@ -278,7 +278,7 @@ function renderClub() {
     }
     // Check Month
     if (allowedMonths !== null) {
-        if (isNaN(r.dateParsed)) return false;
+        if (!(r.dateParsed instanceof Date) || isNaN(r.dateParsed.getTime())) return false;
         const k = window.monthKey(r.dateParsed);
         if (!allowedMonths.includes(k)) return false;
     }
@@ -320,10 +320,10 @@ function renderClub() {
 
   // Trend
   const mData = {};
-  rows.forEach(r => { 
-    if(!isNaN(r.dateParsed)) { 
-      const k = window.monthKey(r.dateParsed); 
-      mData[k] = (mData[k]||0)+1; 
+  rows.forEach(r => {
+    if(r.dateParsed instanceof Date && !isNaN(r.dateParsed.getTime())) {
+      const k = window.monthKey(r.dateParsed);
+      mData[k] = (mData[k]||0)+1;
     }
   });
   const mKeys = Object.keys(mData).sort();
@@ -389,5 +389,10 @@ function renderTopClubs(data) {
 function updateVal(id, v) { const e=document.getElementById(id); if(e) e.textContent=v; }
 
 window.resizeCharts = function() {
-  // Optional resize logic
+  // Resize all active chart instances
+  Object.values(window.CHART_INSTANCES).forEach(chart => {
+    if (chart && typeof chart.windowResizeHandler === 'function') {
+      chart.windowResizeHandler();
+    }
+  });
 };
