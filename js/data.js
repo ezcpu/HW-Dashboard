@@ -61,10 +61,10 @@ window.pal = function() {
 window.apexCommon = function() {
   const p = window.pal();
   return {
-    chart: { 
-      background: 'transparent', 
+    chart: {
+      background: 'transparent',
       toolbar: { show: false },
-      animations: { enabled: true, easing: 'easeinout', speed: 600 }
+      animations: { enabled: true, easing: 'easeinout', speed: 1000 }
     },
     dataLabels: { enabled: false },
     stroke: { show: false, curve: 'smooth', width: 2 }, 
