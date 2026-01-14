@@ -13,17 +13,8 @@ window.toggleEmpCard = function(el) {
 };
 
 async function fetchCSV(url) {
-  return new Promise((resolve, reject) => {
-    Papa.parse(url, {
-      download: true,
-      header: true,
-      skipEmptyLines: true,
-      complete: resolve,
-      error: (error) => {
-        console.error("CSV fetch error for", url, ":", error);
-        resolve({data:[], meta:{fields:[]}});
-      }
-    });
+  return new Promise(resolve => {
+    Papa.parse(url, { download:true, header:true, skipEmptyLines:true, complete:resolve, error:()=>resolve({data:[], meta:{fields:[]}}) });
   });
 }
 
@@ -70,15 +61,19 @@ async function renderEmployer() {
     // --- 2. PROCESS UAW FORD ---
     if (uaw.data && uaw.data.length > 0) {
       const headers = uaw.meta.fields || [];
+      const dateCol = headers[9]; // Column J
       const clubCol = headers.find(h => h.toLowerCase().includes("club") || h.toLowerCase().includes("location")) || headers[0];
-
+      
+      const ONE_YEAR_MS = 365 * 24 * 60 * 60 * 1000;
+      const now = new Date();
       const groupName = "UAW Ford";
 
       uaw.data.forEach(row => {
+        const dateStr = (row[dateCol] || "").trim();
         const clubName = (row[clubCol] || "Unknown Club").trim();
-
-        // Count all records
-        if (clubName && clubName !== "Unknown Club") {
+        const d = new Date(dateStr);
+        
+        if (!isNaN(d) && (now - d) < ONE_YEAR_MS) {
            if (!stats[groupName]) stats[groupName] = { total: 0, clubs: {} };
            stats[groupName].total++;
            stats[groupName].clubs[clubName] = (stats[groupName].clubs[clubName] || 0) + 1;
@@ -109,7 +104,7 @@ async function renderEmployer() {
         .sort((a,b)=>b[1]-a[1])
         .map(([cn,cc]) => `
           <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px; color:var(--text-muted);">
-            <span>• ${window.escapeHtml(cn)}</span>
+            <span>• ${cn}</span>
             <span>${cc}</span>
           </div>
         `).join("");
@@ -117,7 +112,7 @@ async function renderEmployer() {
       return `
         <div class="employer-card" onclick="window.toggleEmpCard(this)">
           <div class="emp-header">
-             <span class="emp-name">${window.escapeHtml(k)}</span>
+             <span class="emp-name">${k}</span>
              <span class="emp-count">${v.total}</span>
           </div>
           <div class="emp-details">
@@ -128,8 +123,8 @@ async function renderEmployer() {
       `;
     }).join("");
 
-  } catch(e) {
-    console.error("Error rendering employer data:", e);
-    con.innerHTML = '<div style="grid-column: 1/-1; color:var(--error); text-align:center">Error loading data</div>';
+  } catch(e) { 
+    console.error(e);
+    con.innerHTML = '<div style="grid-column: 1/-1; color:var(--error); text-align:center">Error loading data</div>'; 
   }
 }
