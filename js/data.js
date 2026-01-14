@@ -8,20 +8,6 @@ window.CFG = {
 
 window.ST = { data: [], filtered: [], months: [], loaded: false, partnersLoaded: false, partnersData: [] };
 
-// Security: HTML escaping to prevent XSS
-window.escapeHtml = function(str) {
-  const div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
-};
-
-// Security: Validate URLs to prevent javascript: protocol injection
-window.isSafeUrl = function(url) {
-  if (!url) return false;
-  const trimmed = url.trim().toLowerCase();
-  return trimmed.startsWith('http://') || trimmed.startsWith('https://');
-};
-
 window.hasCode = function(n) { return window.CFG.CODES.some(c => (n || "").toUpperCase().includes(c)); };
 window.normReg = function(v) {
   const s = (v || "").toUpperCase().trim();
@@ -61,22 +47,10 @@ window.pal = function() {
 window.apexCommon = function() {
   const p = window.pal();
   return {
-    chart: {
-      background: 'transparent',
+    chart: { 
+      background: 'transparent', 
       toolbar: { show: false },
-      animations: {
-        enabled: true,
-        easing: 'easeinout',
-        speed: 2000,
-        animateGradually: {
-          enabled: true,
-          delay: 150
-        },
-        dynamicAnimation: {
-          enabled: true,
-          speed: 1000
-        }
-      }
+      animations: { enabled: true, easing: 'easeinout', speed: 600 }
     },
     dataLabels: { enabled: false },
     stroke: { show: false, curve: 'smooth', width: 2 }, 
@@ -129,25 +103,14 @@ window.loadData = function() {
           for (const k in row) o[k.trim().toLowerCase()] = row[k];
           let ds = (o["created date"] || "").trim();
           let dateParsed = new Date(ds);
-
-          // Only attempt manual parsing if native parsing failed
-          if (isNaN(dateParsed.getTime())) {
-             const parts = ds.split(/[\/\-\.]/);
+          
+          if (isNaN(dateParsed) || ds.includes("-") || ds.includes("/")) {
+             const parts = ds.split(/[\/\-\.]/); 
              if (parts.length === 3) {
                let p1 = parseInt(parts[0], 10), p2 = parseInt(parts[1], 10), p3 = parseInt(parts[2], 10);
-
-               // Detect format based on value ranges
-               if (p3 > 1000) {
-                 // Format: MM/DD/YYYY or DD/MM/YYYY with year at end
-                 dateParsed = new Date(p3, p1 - 1, p2);
-               } else if (p1 > 1000) {
-                 // Format: YYYY/MM/DD or YYYY/DD/MM
-                 dateParsed = new Date(p1, p2 - 1, p3);
-               } else if (p3 < 100) {
-                 // Format: MM/DD/YY - assume 2000s for 2-digit years
-                 const year = p3 < 50 ? 2000 + p3 : 1900 + p3;
-                 dateParsed = new Date(year, p1 - 1, p2);
-               }
+               if (p3 > 1000) dateParsed = new Date(p3, p1 - 1, p2);
+               else if (p1 > 1000) dateParsed = new Date(p1, p2 - 1, p3);
+               else if (p3 < 100) dateParsed = new Date(p3 + 2000, p1 - 1, p2);
              }
           }
           o.dateParsed = dateParsed;
@@ -166,16 +129,16 @@ window.loadData = function() {
           window.updateDashboard(); 
         }
 
-        const dates = window.ST.data.map(r => r.dateParsed).filter(d => d instanceof Date && !isNaN(d.getTime()));
+        const dates = window.ST.data.map(r => r.dateParsed).filter(d => !isNaN(d));
         if (dates.length) {
-           const latest = new Date(Math.max.apply(null, dates.map(d => d.getTime())));
+           const latest = new Date(Math.max(...dates));
            const lu = document.getElementById("lastUpdated");
            const lut = document.getElementById("lastUpdatedText");
            if(lu) lu.style.display = "block";
            if(lut) lut.textContent = "Data: " + latest.toLocaleDateString();
         }
-      } catch (e) { console.error("Data processing error:", e); setStatus("Data Error", "error"); }
+      } catch (e) { console.error(e); setStatus("Data Error", "error"); }
     },
-    error: (e) => { console.error("CSV load error:", e); setStatus("Load Failed", "error"); }
+    error: (e) => { console.error(e); setStatus("Load Failed", "error"); }
   });
 };
