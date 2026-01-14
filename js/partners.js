@@ -11,13 +11,16 @@ function renderPartners() {
   const buildPartnersUI = (data) => {
     // Fill Directory Lists
     data.forEach(p => {
+        // Validate URL to prevent XSS via javascript: protocol
+        const safeLink = (p.link && window.isSafeUrl(p.link)) ? p.link : null;
+
         const itemHtml = `
           <li>
             <div style="display:flex; flex-direction:column; gap:4px;">
-              <span style="font-weight:600; font-size:14px; color:var(--text)">${p.name}</span>
-              ${p.pay ? `<span class="badge payment" style="width:fit-content">${p.pay}</span>` : ""}
+              <span style="font-weight:600; font-size:14px; color:var(--text)">${window.escapeHtml(p.name)}</span>
+              ${p.pay ? `<span class="badge payment" style="width:fit-content">${window.escapeHtml(p.pay)}</span>` : ""}
             </div>
-            ${p.link ? `<a href="${p.link}" target="_blank" class="btn-flyer">View Flyer <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a>` : ""}
+            ${safeLink ? `<a href="${window.escapeHtml(safeLink)}" target="_blank" rel="noopener noreferrer" class="btn-flyer">View Flyer <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a>` : ""}
           </li>
         `;
 
@@ -114,16 +117,22 @@ function renderPartners() {
       });
 
       if (!data.length) {
-         listIds.forEach(id => document.getElementById(id).innerHTML = '<li style="justify-content:center; padding:20px;">No partners found</li>');
+         listIds.forEach(id => {
+           const el = document.getElementById(id);
+           if (el) el.innerHTML = '<li style="justify-content:center; padding:20px;">No partners found</li>';
+         });
          return;
       }
 
       // Build UI
       buildPartnersUI(data);
     },
-    error: () => {
-      console.error("Partner Load Error");
-      listIds.forEach(id => document.getElementById(id).innerHTML = '<li style="color:var(--error)">Failed to load</li>');
+    error: (error) => {
+      console.error("Partner load error:", error);
+      listIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = '<li style="color:var(--error)">Failed to load</li>';
+      });
     }
   });
 }

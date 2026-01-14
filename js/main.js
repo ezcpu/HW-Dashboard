@@ -129,7 +129,12 @@ window.addEventListener('click', e => {
 window.setupGlobalYear = function() {
   const sel = document.getElementById("yearSelect");
   if (!sel) return;
-  const years = new Set(window.ST.data.map(r => isNaN(r.dateParsed) ? null : r.dateParsed.getFullYear()).filter(Boolean));
+  const years = new Set(window.ST.data.map(r => {
+    if (r.dateParsed instanceof Date && !isNaN(r.dateParsed.getTime())) {
+      return r.dateParsed.getFullYear();
+    }
+    return null;
+  }).filter(Boolean));
   years.add(2025); years.add(2026);
   const sorted = [...years].sort((a,b)=>b-a);
   sel.innerHTML = '<option value="all">All Years</option>';
@@ -140,19 +145,22 @@ window.setupGlobalYear = function() {
 
 window.updateDashboard = function() {
   const yr = document.getElementById("yearSelect")?.value || "all";
-  
+
   // 1. Filter Data
   window.ST.filtered = window.ST.data.filter(r => {
     if (yr === "all") return true;
     const d = r.dateParsed;
-    if (isNaN(d) || String(d.getFullYear()) !== yr) return false;
+    if (!(d instanceof Date) || isNaN(d.getTime()) || d.getFullYear().toString() !== yr) return false;
     return true;
   });
 
   // 2. Generate Months (Descending)
-  window.ST.months = [...new Set(window.ST.filtered.map(r => 
-    isNaN(r.dateParsed) ? null : window.monthKey(r.dateParsed)
-  ).filter(Boolean))].sort().reverse(); 
+  window.ST.months = [...new Set(window.ST.filtered.map(r => {
+    if (r.dateParsed instanceof Date && !isNaN(r.dateParsed.getTime())) {
+      return window.monthKey(r.dateParsed);
+    }
+    return null;
+  }).filter(Boolean))].sort().reverse(); 
   
   // 3. Reset Filters
   const clubList = document.getElementById("clubDropdownList");
@@ -168,15 +176,25 @@ window.updateDashboard = function() {
 function openTab(tab) {
   document.querySelectorAll(".tab-content").forEach(t => t.classList.remove("active"));
   document.querySelectorAll(".tab-button").forEach(b => b.classList.remove("active"));
-  document.getElementById(tab)?.classList.add("active");
-  document.querySelector(`button[onclick="openTab('${tab}')"]`)?.classList.add("active");
 
-  if (!window.ST.loaded) return; 
+  const tabContent = document.getElementById(tab);
+  if (tabContent) tabContent.classList.add("active");
+
+  // Find button safely without template string injection
+  const buttons = document.querySelectorAll(".tab-button");
+  buttons.forEach(btn => {
+    const onclick = btn.getAttribute("onclick");
+    if (onclick && onclick.includes(`openTab('${tab}')`)) {
+      btn.classList.add("active");
+    }
+  });
+
+  if (!window.ST.loaded) return;
   if (tab === "current" && typeof renderCurrent === 'function') renderCurrent(window.ST.filtered);
   if (tab === "clubInsights" && typeof renderClub === 'function') renderClub();
   if (tab === "employerPaid" && typeof renderEmployer === 'function') renderEmployer();
   if (tab === "active" && typeof renderPartners === 'function') renderPartners();
-  
+
   if (typeof resizeCharts === 'function') requestAnimationFrame(resizeCharts);
 }
 
