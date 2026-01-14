@@ -70,24 +70,15 @@ async function renderEmployer() {
     // --- 2. PROCESS UAW FORD ---
     if (uaw.data && uaw.data.length > 0) {
       const headers = uaw.meta.fields || [];
-      // Search for date column by name instead of hardcoded index
-      const dateCol = headers.find(h => {
-        const lower = h.toLowerCase();
-        return lower.includes("date") || lower.includes("created") || lower.includes("join");
-      }) || headers[9]; // Fallback to column 9 if not found
-
       const clubCol = headers.find(h => h.toLowerCase().includes("club") || h.toLowerCase().includes("location")) || headers[0];
 
-      const ONE_YEAR_MS = 365 * 24 * 60 * 60 * 1000;
-      const now = new Date();
       const groupName = "UAW Ford";
 
       uaw.data.forEach(row => {
-        const dateStr = (row[dateCol] || "").trim();
         const clubName = (row[clubCol] || "Unknown Club").trim();
-        const d = new Date(dateStr);
 
-        if (d instanceof Date && !isNaN(d.getTime()) && (now - d) < ONE_YEAR_MS) {
+        // Count all records
+        if (clubName && clubName !== "Unknown Club") {
            if (!stats[groupName]) stats[groupName] = { total: 0, clubs: {} };
            stats[groupName].total++;
            stats[groupName].clubs[clubName] = (stats[groupName].clubs[clubName] || 0) + 1;
