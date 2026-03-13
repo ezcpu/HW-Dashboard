@@ -1,150 +1,104 @@
-// Wrap initialization logic to avoid global clutter where possible
-// Note: window.ST and functions used by other files remain attached to window
-document.addEventListener("DOMContentLoaded", () => {
-  
-  // 1. Cache DOM Elements for performance
-  const domCache = {
-    navContainer: document.getElementById("mainNav"),
-    tabButtons: document.querySelectorAll(".tab-button"),
-    tabContents: document.querySelectorAll(".tab-content"),
-    themeBtn: document.getElementById("themeToggle"),
-    themeText: document.getElementById("themeText"),
-    themeIcon: document.getElementById("themeIcon"),
-    clubBtn: document.getElementById("clubDropdownBtn"),
-    clubList: document.getElementById("clubDropdownList"),
-    monthBtn: document.getElementById("monthDropdownBtn"),
-    monthList: document.getElementById("monthDropdownList"),
-    exportPdfBtn: document.getElementById("exportPdfBtn")
-  };
+// ----------------------------------------------------------------------
+// GLOBAL NAVIGATION & UI FUNCTIONS
+// Restored to global scope to ensure compatibility with HTML & other JS files
+// ----------------------------------------------------------------------
 
-  // 2. Setup System / Saved Dark Mode Preferences
-  function initTheme() {
-    const savedTheme = localStorage.getItem("theme");
-    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    
-    if (savedTheme === "dark" || (!savedTheme && systemPrefersDark)) {
-      document.body.classList.add("dark");
-    }
-    updateThemeUI();
-  }
-
-  function updateThemeUI() {
-    const isDark = document.body.classList.contains("dark");
-    const moonIcon = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
-    const sunIcon = '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>';
-
-    if(domCache.themeText) domCache.themeText.textContent = isDark ? "Light Mode" : "Dark Mode";
-    if(domCache.themeIcon) domCache.themeIcon.innerHTML = isDark ? sunIcon : moonIcon;
-  }
-
-  if (domCache.themeBtn) {
-    domCache.themeBtn.addEventListener('click', () => {
-      document.body.classList.toggle("dark");
-      localStorage.setItem("theme", document.body.classList.contains("dark") ? "dark" : "light");
-      updateThemeUI();
-      if (typeof window.updateDashboard === 'function') window.updateDashboard();
-    });
-  }
-
-  // 3. Setup Tab Navigation with Event Delegation & ARIA updates
-  if (domCache.navContainer) {
-    domCache.navContainer.addEventListener('click', (e) => {
-      const button = e.target.closest('.tab-button');
-      if (!button) return;
-      
-      const tabId = button.getAttribute('data-tab');
-      
-      // Update Button States & ARIA
-      domCache.tabButtons.forEach(b => {
-        b.classList.remove('active');
-        b.setAttribute('aria-selected', 'false');
-      });
-      button.classList.add('active');
-      button.setAttribute('aria-selected', 'true');
-
-      // Update Panel States
-      domCache.tabContents.forEach(content => content.classList.remove('active'));
-      const activePanel = document.getElementById(tabId);
-      if (activePanel) activePanel.classList.add('active');
-
-      // Trigger Render Functions (if they exist from other scripts)
-      if (!window.ST || !window.ST.loaded) return; 
-      if (tabId === "current" && typeof renderCurrent === 'function') renderCurrent(window.ST.filtered);
-      if (tabId === "clubInsights" && typeof renderClub === 'function') renderClub();
-      if (tabId === "employerPaid" && typeof renderEmployer === 'function') renderEmployer();
-      if (tabId === "active" && typeof renderPartners === 'function') renderPartners();
-      
-      if (typeof resizeCharts === 'function') requestAnimationFrame(resizeCharts);
-    });
-  }
-
-  // 4. Setup Custom Dropdown Logic
-  function toggleDropdown(listElem, btnElem, otherListElem, otherBtnElem) {
-    // Close the other dropdown if it's open
-    if (otherListElem) {
-      otherListElem.classList.remove("show");
-      otherBtnElem.classList.remove("active");
-      otherBtnElem.setAttribute('aria-expanded', 'false');
-    }
-
-    // Toggle targeted dropdown
-    if (listElem) {
-      const isShowing = listElem.classList.contains("show");
-      listElem.classList.toggle("show");
-      btnElem.classList.toggle("active");
-      btnElem.setAttribute('aria-expanded', !isShowing);
-    }
-  }
-
-  if (domCache.clubBtn) {
-    domCache.clubBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      toggleDropdown(domCache.clubList, domCache.clubBtn, domCache.monthList, domCache.monthBtn);
-    });
-  }
-
-  if (domCache.monthBtn) {
-    domCache.monthBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      toggleDropdown(domCache.monthList, domCache.monthBtn, domCache.clubList, domCache.clubBtn);
-    });
-  }
-
-  // Close dropdowns when clicking outside
-  window.addEventListener('click', e => {
-    [
-      { list: domCache.clubList, btn: domCache.clubBtn },
-      { list: domCache.monthList, btn: domCache.monthBtn }
-    ].forEach(({list, btn}) => {
-      if (list && list.classList.contains('show') && !list.contains(e.target) && !btn.contains(e.target)) {
-        list.classList.remove('show');
-        btn.classList.remove('active');
-        btn.setAttribute('aria-expanded', 'false');
-      }
-    });
+window.openTab = function(tab) {
+  // 1. Reset all buttons
+  document.querySelectorAll(".tab-button").forEach(b => {
+    b.classList.remove("active");
+    b.setAttribute("aria-selected", "false");
   });
-
-  // 5. Setup PDF Export button
-  if (domCache.exportPdfBtn) {
-    domCache.exportPdfBtn.addEventListener('click', window.exportPDF);
+  
+  // 2. Set active button (Finds it whether you use the new data-tab or old onclick)
+  const activeBtn = document.querySelector(`.tab-button[data-tab="${tab}"]`) || 
+                    document.querySelector(`button[onclick*="openTab('${tab}')"]`) ||
+                    document.querySelector(`button[onclick*='openTab("${tab}")']`);
+  if (activeBtn) {
+    activeBtn.classList.add("active");
+    activeBtn.setAttribute("aria-selected", "true");
   }
 
-  // 6. Initialize App Data
-  initTheme();
-  if (typeof window.loadData === 'function') window.loadData();
+  // 3. Reset all panels
+  document.querySelectorAll(".tab-content").forEach(t => t.classList.remove("active"));
   
-  // Resize debouncer
-  let timer;
-  window.addEventListener("resize", () => {
-    clearTimeout(timer);
-    timer = setTimeout(() => { if(window.resizeCharts) window.resizeCharts(); }, 150);
+  // 4. Set active panel
+  const activePanel = document.getElementById(tab);
+  if (activePanel) activePanel.classList.add("active");
+
+  // 5. Trigger Render Functions (if they exist)
+  if (!window.ST || !window.ST.loaded) return; 
+  
+  if (tab === "current" && typeof renderCurrent === 'function') renderCurrent(window.ST.filtered);
+  if (tab === "clubInsights" && typeof renderClub === 'function') renderClub();
+  if (tab === "employerPaid" && typeof renderEmployer === 'function') renderEmployer();
+  if (tab === "active" && typeof renderPartners === 'function') renderPartners();
+  
+  if (typeof resizeCharts === 'function') requestAnimationFrame(resizeCharts);
+};
+
+// DROPDOWN TOGGLE FUNCTIONS
+window.toggleClubDropdown = function(e) { 
+  if(e) e.stopPropagation(); 
+  const cList = document.getElementById("clubDropdownList");
+  const cBtn = document.getElementById("clubDropdownBtn");
+  const mList = document.getElementById("monthDropdownList");
+  const mBtn = document.getElementById("monthDropdownBtn");
+
+  // Close Month Dropdown
+  if(mList) mList.classList.remove("show");
+  if(mBtn) { mBtn.classList.remove("active"); mBtn.setAttribute("aria-expanded", "false"); }
+
+  // Toggle Club Dropdown
+  if(cList) {
+    const isShowing = cList.classList.contains("show");
+    cList.classList.toggle("show");
+    if(cBtn) { 
+      cBtn.classList.toggle("active"); 
+      cBtn.setAttribute("aria-expanded", !isShowing); 
+    }
+  }
+};
+
+window.toggleMonthDropdown = function(e) { 
+  if(e) e.stopPropagation(); 
+  const cList = document.getElementById("clubDropdownList");
+  const cBtn = document.getElementById("clubDropdownBtn");
+  const mList = document.getElementById("monthDropdownList");
+  const mBtn = document.getElementById("monthDropdownBtn");
+
+  // Close Club Dropdown
+  if(cList) cList.classList.remove("show");
+  if(cBtn) { cBtn.classList.remove("active"); cBtn.setAttribute("aria-expanded", "false"); }
+
+  // Toggle Month Dropdown
+  if(mList) {
+    const isShowing = mList.classList.contains("show");
+    mList.classList.toggle("show");
+    if(mBtn) { 
+      mBtn.classList.toggle("active"); 
+      mBtn.setAttribute("aria-expanded", !isShowing); 
+    }
+  }
+};
+
+// CLOSE DROPDOWNS ON CLICK OUTSIDE
+window.addEventListener('click', e => {
+  const dropdowns = [
+    { list: document.getElementById("clubDropdownList"), btn: document.getElementById("clubDropdownBtn") },
+    { list: document.getElementById("monthDropdownList"), btn: document.getElementById("monthDropdownBtn") }
+  ];
+
+  dropdowns.forEach(({list, btn}) => {
+    if (list && list.classList.contains('show') && !list.contains(e.target) && btn && !btn.contains(e.target)) {
+      list.classList.remove('show');
+      btn.classList.remove('active');
+      btn.setAttribute('aria-expanded', 'false');
+    }
   });
 });
 
-// ----------------------------------------------------------------------
-// GLOBAL FUNCTIONS (Keep attached to window for data.js / charts.js access)
-// ----------------------------------------------------------------------
-
+// PDF Export Logic
 window.exportPDF = function() {
   if (!window.jspdf || !window.ST || !window.ST.loaded) { alert("System not ready or data missing."); return; }
   
@@ -180,7 +134,7 @@ window.exportPDF = function() {
   } else {
     head = [['Region', 'Club Name', 'Membership', 'Join Date']];
     body = (window.ST.filtered || []).map(r => [
-      window.normReg ? window.normReg(r["region"]) : r["region"],
+      typeof window.normReg === 'function' ? window.normReg(r["region"]) : r["region"],
       r["club name"] || "Unknown",
       r["membership type"] || "-",
       r.dateParsed ? r.dateParsed.toLocaleDateString() : "N/A"
@@ -201,6 +155,7 @@ window.exportPDF = function() {
   doc.save(`HW_Report_${activeTab}_${new Date().toISOString().slice(0,10)}.pdf`);
 };
 
+// UI Helpers
 window.renderEmptyState = function(id, msg) {
   const el = document.getElementById(id);
   if (el) el.innerHTML = `<div style="text-align:center; padding:32px; color:var(--text-muted); opacity:0.8; font-size:13px;">${msg}</div>`;
@@ -260,8 +215,69 @@ window.updateDashboard = function() {
   
   // Re-trigger the active tab render
   const activeTab = document.querySelector(".tab-content.active");
-  if (activeTab) {
-    const tabBtn = document.querySelector(`.tab-button[data-tab="${activeTab.id}"]`);
-    if(tabBtn) tabBtn.click();
-  }
+  if (activeTab) window.openTab(activeTab.id);
 };
+
+// ----------------------------------------------------------------------
+// INITIALIZATION ON DOM LOAD
+// ----------------------------------------------------------------------
+document.addEventListener("DOMContentLoaded", () => {
+  
+  // Setup System / Saved Dark Mode Preferences
+  const themeBtn = document.getElementById("themeToggle");
+  const themeText = document.getElementById("themeText");
+  const themeIcon = document.getElementById("themeIcon");
+
+  const moonIcon = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
+  const sunIcon = '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>';
+
+  function updateThemeUI() {
+    const isDark = document.body.classList.contains("dark");
+    if(themeText) themeText.textContent = isDark ? "Light Mode" : "Dark Mode";
+    if(themeIcon) themeIcon.innerHTML = isDark ? sunIcon : moonIcon;
+  }
+
+  const savedTheme = localStorage.getItem("theme");
+  const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  
+  if (savedTheme === "dark" || (!savedTheme && systemPrefersDark)) {
+    document.body.classList.add("dark");
+  }
+  updateThemeUI();
+
+  if (themeBtn) {
+    themeBtn.addEventListener('click', () => {
+      document.body.classList.toggle("dark");
+      localStorage.setItem("theme", document.body.classList.contains("dark") ? "dark" : "light");
+      updateThemeUI();
+      if (typeof window.updateDashboard === 'function') window.updateDashboard();
+    });
+  }
+
+  // Backup event delegation for tabs just in case the old HTML onclicks are completely gone
+  const navContainer = document.querySelector('.sidebar-nav');
+  if (navContainer) {
+    navContainer.addEventListener('click', (e) => {
+      const button = e.target.closest('.tab-button');
+      if (button && button.hasAttribute('data-tab') && !button.hasAttribute('onclick')) {
+        window.openTab(button.getAttribute('data-tab'));
+      }
+    });
+  }
+
+  // Bind Export PDF Button
+  const exportPdfBtn = document.getElementById("exportPdfBtn");
+  if (exportPdfBtn && !exportPdfBtn.hasAttribute('onclick')) {
+    exportPdfBtn.addEventListener('click', window.exportPDF);
+  }
+
+  // Initialize App Data
+  if (typeof window.loadData === 'function') window.loadData();
+  
+  // Resize debouncer for charts
+  let timer;
+  window.addEventListener("resize", () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => { if(window.resizeCharts) window.resizeCharts(); }, 150);
+  });
+});
