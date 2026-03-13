@@ -71,6 +71,11 @@ body {
   backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
   border-right: 1px solid var(--glass-border); 
   z-index: 100; flex-shrink: 0;
+  
+  /* GPU Acceleration to fix Chrome lag */
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
 }
 
 .sidebar-header { display: flex; align-items: center; gap: 12px; margin-bottom: 40px; }
@@ -80,7 +85,9 @@ body {
 .tab-button {
   text-align: left; padding: 10px 12px; background: transparent; border: none;
   color: var(--text-muted); font-weight: 600; font-size: 13px; border-radius: 6px;
-  cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 12px;
+  cursor: pointer; 
+  transition: background 0.2s, color 0.2s; /* Replaced 'all' */
+  display: flex; align-items: center; gap: 12px;
 }
 .tab-button .nav-icon { width: 18px; height: 18px; opacity: 0.7; stroke-width: 2px; }
 .tab-button:hover { background: rgba(0,0,0,0.04); color: var(--text); }
@@ -99,7 +106,8 @@ body.dark .tab-button:hover { background: rgba(255,255,255,0.05); }
 /* CONTROLS & BUTTONS */
 .btn-glass {
   width: 100%; padding: 9px 12px; border-radius: 6px; border: 1px solid var(--glass-border);
-  background: var(--glass-bg); color: var(--text); font-weight: 600; cursor: pointer; transition: 0.2s;
+  background: var(--glass-bg); color: var(--text); font-weight: 600; cursor: pointer; 
+  transition: border-color 0.2s, color 0.2s, transform 0.2s, background 0.2s; /* Replaced 'all' */
   font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 8px;
   box-shadow: var(--glass-shadow);
 }
@@ -124,7 +132,7 @@ body.dark .btn-glass { background: rgba(255,255,255,0.05); }
   min-height: 38px;
   font-family: inherit;
   position: relative;
-  transition: all 0.2s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease, color 0.2s ease; /* Replaced 'all' */
 }
 
 /* 1. FIX THE NATIVE SELECT (YEAR) */
@@ -172,57 +180,6 @@ body.dark .glass-select:hover, body.dark .dropdown-trigger:hover { border-color:
 /* --- FIXED DROPDOWN STYLES --- */
 /* --- DROPDOWN ANIMATIONS & STYLING --- */
 
-/* 1. The Trigger Button */
-.dropdown-trigger {
-  /* Layout Styles */
-  width: 100%; 
-  padding: 9px 12px; 
-  border-radius: 6px; 
-  border: 1px solid var(--glass-border);
-  background: var(--glass-bg); 
-  color: var(--text); 
-  font-weight: 600; 
-  cursor: pointer; 
-  font-size: 13px;
-  box-shadow: var(--glass-shadow);
-  display: flex; 
-  align-items: center;
-  justify-content: space-between; /* Ensures text left, arrow right */
-  min-height: 38px;
-  font-family: inherit;
-  position: relative;
-  
-  /* Animation Transition */
-  transition: all 0.2s ease;
-}
-
-/* 2. Active State (When Open) */
-.dropdown-trigger.active {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1); /* Subtle glow */
-}
-
-/* 3. The Arrow Icon */
-.dropdown-trigger::after {
-  content: ''; 
-  display: inline-block; 
-  width: 0; height: 0; 
-  border-left: 4px solid transparent; 
-  border-right: 4px solid transparent;
-  border-top: 4px solid var(--text-muted); 
-  margin-left: 8px;
-  
-  /* Arrow Animation */
-  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1); 
-  transform-origin: center center;
-}
-
-/* 4. Rotate Arrow when Active */
-.dropdown-trigger.active::after {
-  transform: rotate(180deg);
-  border-top-color: var(--primary); /* Highlight arrow color */
-}
-
 /* 5. The Menu Container */
 .dropdown-container { position: relative; }
 
@@ -247,6 +204,12 @@ body.dark .glass-select:hover, body.dark .dropdown-trigger:hover { border-color:
   
   /* Animation Setup */
   transform-origin: top center;
+  
+  /* GPU Acceleration and animation hinting for Chrome */
+  will-change: transform, opacity;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
 }
 
 .glass-dropdown-menu::-webkit-scrollbar { width: 5px; }
@@ -279,7 +242,7 @@ body.dark .glass-dropdown-menu::-webkit-scrollbar-thumb { background-color: #475
   color: var(--text);
   cursor: pointer;
   border-radius: 4px;
-  transition: 0.1s;
+  transition: background 0.1s, color 0.1s; /* Replaced 'all' */
   white-space: nowrap;
 }
 .checkbox-item:hover { background: rgba(0,0,0,0.05); }
@@ -302,6 +265,12 @@ body.dark .checkbox-item:hover { background: rgba(255,255,255,0.05); }
   border-radius: var(--radius); 
   padding: 24px;
   transition: box-shadow 0.2s;
+  
+  /* GPU Acceleration */
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
+  will-change: transform, box-shadow;
 }
 .glass-panel:hover { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025); }
 
@@ -402,7 +371,7 @@ body.dark .kpi-icon-wrap.white {
   border-radius: 8px;
   padding: 20px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background-color 0.2s ease; /* Replaced 'all' */
   position: relative;
   overflow: hidden;
 }
@@ -435,8 +404,12 @@ body.dark .employer-card.expanded { background: rgba(79, 70, 229, 0.1); }
   border-top: 1px solid transparent; /* Start transparent to avoid snap */
   overflow: hidden;
   
-  /* Animate ALL properties */
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  /* Replace 'all' with explicit animatable properties */
+  transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
+              opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
+              margin-top 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
+              padding-top 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
+              border-top-color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .employer-card.expanded .emp-details {
@@ -477,7 +450,8 @@ body.dark .dir-col { background: rgba(255,255,255,0.02); }
 .glass-list { list-style: none; padding: 0; margin: 0; }
 .glass-list li {
   display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 16px;
-  padding: 14px; border-bottom: 1px solid var(--glass-border); transition: 0.1s;
+  padding: 14px; border-bottom: 1px solid var(--glass-border); 
+  transition: background 0.1s; /* Replaced 'all' */
 }
 .glass-list li:hover { background: rgba(0,0,0,0.015); }
 .glass-list li:last-child { border-bottom: none; }
@@ -492,7 +466,8 @@ body.dark .scroll-sm::-webkit-scrollbar-thumb { background-color: #475569; }
    border-radius: 6px; font-size: 12px; font-weight: 600; text-decoration: none; 
    display: flex; align-items: center; justify-content: center; gap: 6px;
    width: 110px; 
-   transition: 0.2s; box-shadow: 0 2px 4px rgba(79, 70, 229, 0.2);
+   transition: transform 0.2s, box-shadow 0.2s; /* Replaced 'all' */
+   box-shadow: 0 2px 4px rgba(79, 70, 229, 0.2);
 }
 .btn-flyer:hover { transform: translateY(-1px); box-shadow: 0 4px 6px rgba(79, 70, 229, 0.3); }
 
