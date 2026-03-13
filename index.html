@@ -47,19 +47,19 @@
   </div>
   
   <nav class="sidebar-nav" role="tablist" id="mainNav">
-    <button class="tab-button active" data-tab="current" role="tab" aria-selected="true" aria-controls="current" id="tab-btn-current">
+    <button class="tab-button active" onclick="openTab('current')" role="tab" aria-selected="true" aria-controls="current" id="tab-btn-current">
       <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
       <span>Overview</span>
     </button>
-    <button class="tab-button" data-tab="clubInsights" role="tab" aria-selected="false" aria-controls="clubInsights" id="tab-btn-clubInsights">
+    <button class="tab-button" onclick="openTab('clubInsights')" role="tab" aria-selected="false" aria-controls="clubInsights" id="tab-btn-clubInsights">
       <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18"/><path d="M5 21V7l8-4 8 4v14"/><path d="M17 21v-8.5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0-.5.5V21"/><path d="M9 10a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2.5a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1V10z"/></svg>
       <span>Club Insights</span>
     </button>
-    <button class="tab-button" data-tab="employerPaid" role="tab" aria-selected="false" aria-controls="employerPaid" id="tab-btn-employerPaid">
+    <button class="tab-button" onclick="openTab('employerPaid')" role="tab" aria-selected="false" aria-controls="employerPaid" id="tab-btn-employerPaid">
       <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
       <span>Employers</span>
     </button>
-    <button class="tab-button" data-tab="active" role="tab" aria-selected="false" aria-controls="active" id="tab-btn-active">
+    <button class="tab-button" onclick="openTab('active')" role="tab" aria-selected="false" aria-controls="active" id="tab-btn-active">
       <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
       <span>Partners</span>
     </button>
@@ -67,11 +67,11 @@
 
   <div class="sidebar-footer">
     <div class="sidebar-controls">
-      <button id="exportPdfBtn" class="btn-glass">
+      <button id="exportPdfBtn" onclick="exportPDF()" class="btn-glass">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
         Export PDF
       </button>
-      <button id="themeToggle" class="btn-glass">
+      <button id="themeToggle" onclick="toggleTheme()" class="btn-glass">
         <svg id="themeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
         <span id="themeText">Dark Mode</span>
       </button>
@@ -82,43 +82,22 @@
   <main class="main-content">
     
     <div class="tab-content active" id="current" role="tabpanel" aria-labelledby="tab-btn-current">
-      
       <div class="kpi-grid">
         <div class="glass-panel kpi-card">
-          <div class="kpi-icon-wrap blue">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-          </div>
-          <div class="kpi-content">
-            <h3>Total Members</h3>
-            <div class="val" id="kpiTotal">—</div>
-          </div>
+          <div class="kpi-icon-wrap blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+          <div class="kpi-content"><h3>Total Members</h3><div class="val" id="kpiTotal">—</div></div>
         </div>
         <div class="glass-panel kpi-card">
-          <div class="kpi-icon-wrap purple">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-          </div>
-          <div class="kpi-content">
-            <h3>Black Card</h3>
-            <div class="val" id="kpiBC">—</div>
-          </div>
+          <div class="kpi-icon-wrap purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div>
+          <div class="kpi-content"><h3>Black Card</h3><div class="val" id="kpiBC">—</div></div>
         </div>
         <div class="glass-panel kpi-card">
-          <div class="kpi-icon-wrap white">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-          </div>
-          <div class="kpi-content">
-            <h3>Classic Card</h3>
-            <div class="val" id="kpi10NR">—</div>
-          </div>
+          <div class="kpi-icon-wrap white"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div>
+          <div class="kpi-content"><h3>Classic Card</h3><div class="val" id="kpi10NR">—</div></div>
         </div>
         <div class="glass-panel kpi-card">
-          <div class="kpi-icon-wrap orange">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-          </div>
-          <div class="kpi-content">
-            <h3>Black Card Ratio</h3>
-            <div class="val" id="kpiRatio">—</div>
-          </div>
+          <div class="kpi-icon-wrap orange"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
+          <div class="kpi-content"><h3>Black Card Ratio</h3><div class="val" id="kpiRatio">—</div></div>
         </div>
       </div>
 
@@ -145,14 +124,14 @@
         <div class="control-group">
           <span>Club Filter:</span>
           <div class="dropdown-container">
-            <button id="clubDropdownBtn" class="dropdown-trigger" aria-haspopup="listbox" aria-expanded="false">All Clubs</button>
+            <button id="clubDropdownBtn" class="dropdown-trigger" onclick="toggleClubDropdown(event)">All Clubs</button>
             <div id="clubDropdownList" class="glass-dropdown-menu" role="listbox"></div>
           </div>
         </div>
         <div class="control-group">
           <span>Month:</span>
           <div class="dropdown-container">
-            <button id="monthDropdownBtn" class="dropdown-trigger" aria-haspopup="listbox" aria-expanded="false">All Months</button>
+            <button id="monthDropdownBtn" class="dropdown-trigger" onclick="toggleMonthDropdown(event)">All Months</button>
             <div id="monthDropdownList" class="glass-dropdown-menu" role="listbox"></div>
           </div>
         </div>
@@ -160,37 +139,20 @@
 
       <div class="kpi-grid mt-4">
         <div class="glass-panel kpi-card">
-          <div class="kpi-icon-wrap blue">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-          </div>
-          <div class="kpi-content">
-            <h3>Selected Members</h3>
-            <div class="val" id="ckpiTotal">—</div>
-          </div>
+          <div class="kpi-icon-wrap blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+          <div class="kpi-content"><h3>Selected Members</h3><div class="val" id="ckpiTotal">—</div></div>
         </div>
         <div class="glass-panel kpi-card">
-          <div class="kpi-icon-wrap purple">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-          </div>
-          <div class="kpi-content">
-            <h3>Black Card</h3><div class="val" id="ckpiBC">—</div>
-          </div>
+          <div class="kpi-icon-wrap purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div>
+          <div class="kpi-content"><h3>Black Card</h3><div class="val" id="ckpiBC">—</div></div>
         </div>
         <div class="glass-panel kpi-card">
-          <div class="kpi-icon-wrap white">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-          </div>
-          <div class="kpi-content">
-            <h3>Classic Card</h3><div class="val" id="ckpi10NR">—</div>
-          </div>
+          <div class="kpi-icon-wrap white"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div>
+          <div class="kpi-content"><h3>Classic Card</h3><div class="val" id="ckpi10NR">—</div></div>
         </div>
         <div class="glass-panel kpi-card">
-          <div class="kpi-icon-wrap orange">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-          </div>
-          <div class="kpi-content">
-            <h3>Ratio</h3><div class="val" id="ckpiRatio">—</div>
-          </div>
+          <div class="kpi-icon-wrap orange"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
+          <div class="kpi-content"><h3>Ratio</h3><div class="val" id="ckpiRatio">—</div></div>
         </div>
       </div>
 
@@ -199,13 +161,8 @@
         <div class="glass-panel"><div class="legend">Top Codes</div><div id="clubUsage" class="chart-container"></div></div>
       </div>
       
-      <div class="glass-panel mt-4">
-        <div class="legend">Signup Trend</div><div id="clubTrend" class="chart-container"></div>
-      </div>
-
-      <div class="glass-panel mt-4">
-        <div class="legend">Top Clubs Performance</div><div id="topClubsChart" class="chart-container"></div>
-      </div>
+      <div class="glass-panel mt-4"><div class="legend">Signup Trend</div><div id="clubTrend" class="chart-container"></div></div>
+      <div class="glass-panel mt-4"><div class="legend">Top Clubs Performance</div><div id="topClubsChart" class="chart-container"></div></div>
     </div>
 
     <div class="tab-content" id="employerPaid" role="tabpanel" aria-labelledby="tab-btn-employerPaid">
@@ -227,18 +184,9 @@
         <div class="glass-panel">
             <div class="legend">Directory</div>
             <div class="directory-grid">
-              <div class="dir-col">
-                <div class="legend header-west">WEST</div>
-                <ul id="listWest" class="glass-list scroll-sm"></ul>
-              </div>
-              <div class="dir-col">
-                <div class="legend header-can">CANADA</div>
-                <ul id="listCan" class="glass-list scroll-sm"></ul>
-              </div>
-              <div class="dir-col">
-                <div class="legend header-east">EAST</div>
-                <ul id="listEast" class="glass-list scroll-sm"></ul>
-              </div>
+              <div class="dir-col"><div class="legend header-west">WEST</div><ul id="listWest" class="glass-list scroll-sm"></ul></div>
+              <div class="dir-col"><div class="legend header-can">CANADA</div><ul id="listCan" class="glass-list scroll-sm"></ul></div>
+              <div class="dir-col"><div class="legend header-east">EAST</div><ul id="listEast" class="glass-list scroll-sm"></ul></div>
             </div>
         </div>
     </div>
