@@ -1,6 +1,152 @@
-// PDF Export Logic
+// Wrap initialization logic to avoid global clutter where possible
+// Note: window.ST and functions used by other files remain attached to window
+document.addEventListener("DOMContentLoaded", () => {
+  
+  // 1. Cache DOM Elements for performance
+  const domCache = {
+    navContainer: document.getElementById("mainNav"),
+    tabButtons: document.querySelectorAll(".tab-button"),
+    tabContents: document.querySelectorAll(".tab-content"),
+    themeBtn: document.getElementById("themeToggle"),
+    themeText: document.getElementById("themeText"),
+    themeIcon: document.getElementById("themeIcon"),
+    clubBtn: document.getElementById("clubDropdownBtn"),
+    clubList: document.getElementById("clubDropdownList"),
+    monthBtn: document.getElementById("monthDropdownBtn"),
+    monthList: document.getElementById("monthDropdownList"),
+    exportPdfBtn: document.getElementById("exportPdfBtn")
+  };
+
+  // 2. Setup System / Saved Dark Mode Preferences
+  function initTheme() {
+    const savedTheme = localStorage.getItem("theme");
+    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    if (savedTheme === "dark" || (!savedTheme && systemPrefersDark)) {
+      document.body.classList.add("dark");
+    }
+    updateThemeUI();
+  }
+
+  function updateThemeUI() {
+    const isDark = document.body.classList.contains("dark");
+    const moonIcon = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
+    const sunIcon = '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>';
+
+    if(domCache.themeText) domCache.themeText.textContent = isDark ? "Light Mode" : "Dark Mode";
+    if(domCache.themeIcon) domCache.themeIcon.innerHTML = isDark ? sunIcon : moonIcon;
+  }
+
+  if (domCache.themeBtn) {
+    domCache.themeBtn.addEventListener('click', () => {
+      document.body.classList.toggle("dark");
+      localStorage.setItem("theme", document.body.classList.contains("dark") ? "dark" : "light");
+      updateThemeUI();
+      if (typeof window.updateDashboard === 'function') window.updateDashboard();
+    });
+  }
+
+  // 3. Setup Tab Navigation with Event Delegation & ARIA updates
+  if (domCache.navContainer) {
+    domCache.navContainer.addEventListener('click', (e) => {
+      const button = e.target.closest('.tab-button');
+      if (!button) return;
+      
+      const tabId = button.getAttribute('data-tab');
+      
+      // Update Button States & ARIA
+      domCache.tabButtons.forEach(b => {
+        b.classList.remove('active');
+        b.setAttribute('aria-selected', 'false');
+      });
+      button.classList.add('active');
+      button.setAttribute('aria-selected', 'true');
+
+      // Update Panel States
+      domCache.tabContents.forEach(content => content.classList.remove('active'));
+      const activePanel = document.getElementById(tabId);
+      if (activePanel) activePanel.classList.add('active');
+
+      // Trigger Render Functions (if they exist from other scripts)
+      if (!window.ST || !window.ST.loaded) return; 
+      if (tabId === "current" && typeof renderCurrent === 'function') renderCurrent(window.ST.filtered);
+      if (tabId === "clubInsights" && typeof renderClub === 'function') renderClub();
+      if (tabId === "employerPaid" && typeof renderEmployer === 'function') renderEmployer();
+      if (tabId === "active" && typeof renderPartners === 'function') renderPartners();
+      
+      if (typeof resizeCharts === 'function') requestAnimationFrame(resizeCharts);
+    });
+  }
+
+  // 4. Setup Custom Dropdown Logic
+  function toggleDropdown(listElem, btnElem, otherListElem, otherBtnElem) {
+    // Close the other dropdown if it's open
+    if (otherListElem) {
+      otherListElem.classList.remove("show");
+      otherBtnElem.classList.remove("active");
+      otherBtnElem.setAttribute('aria-expanded', 'false');
+    }
+
+    // Toggle targeted dropdown
+    if (listElem) {
+      const isShowing = listElem.classList.contains("show");
+      listElem.classList.toggle("show");
+      btnElem.classList.toggle("active");
+      btnElem.setAttribute('aria-expanded', !isShowing);
+    }
+  }
+
+  if (domCache.clubBtn) {
+    domCache.clubBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleDropdown(domCache.clubList, domCache.clubBtn, domCache.monthList, domCache.monthBtn);
+    });
+  }
+
+  if (domCache.monthBtn) {
+    domCache.monthBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleDropdown(domCache.monthList, domCache.monthBtn, domCache.clubList, domCache.clubBtn);
+    });
+  }
+
+  // Close dropdowns when clicking outside
+  window.addEventListener('click', e => {
+    [
+      { list: domCache.clubList, btn: domCache.clubBtn },
+      { list: domCache.monthList, btn: domCache.monthBtn }
+    ].forEach(({list, btn}) => {
+      if (list && list.classList.contains('show') && !list.contains(e.target) && !btn.contains(e.target)) {
+        list.classList.remove('show');
+        btn.classList.remove('active');
+        btn.setAttribute('aria-expanded', 'false');
+      }
+    });
+  });
+
+  // 5. Setup PDF Export button
+  if (domCache.exportPdfBtn) {
+    domCache.exportPdfBtn.addEventListener('click', window.exportPDF);
+  }
+
+  // 6. Initialize App Data
+  initTheme();
+  if (typeof window.loadData === 'function') window.loadData();
+  
+  // Resize debouncer
+  let timer;
+  window.addEventListener("resize", () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => { if(window.resizeCharts) window.resizeCharts(); }, 150);
+  });
+});
+
+// ----------------------------------------------------------------------
+// GLOBAL FUNCTIONS (Keep attached to window for data.js / charts.js access)
+// ----------------------------------------------------------------------
+
 window.exportPDF = function() {
-  if (!window.jspdf || !window.ST.loaded) { alert("System not ready or data missing."); return; }
+  if (!window.jspdf || !window.ST || !window.ST.loaded) { alert("System not ready or data missing."); return; }
   
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
@@ -33,8 +179,8 @@ window.exportPDF = function() {
     }
   } else {
     head = [['Region', 'Club Name', 'Membership', 'Join Date']];
-    body = window.ST.filtered.map(r => [
-      window.normReg(r["region"]),
+    body = (window.ST.filtered || []).map(r => [
+      window.normReg ? window.normReg(r["region"]) : r["region"],
       r["club name"] || "Unknown",
       r["membership type"] || "-",
       r.dateParsed ? r.dateParsed.toLocaleDateString() : "N/A"
@@ -55,13 +201,12 @@ window.exportPDF = function() {
   doc.save(`HW_Report_${activeTab}_${new Date().toISOString().slice(0,10)}.pdf`);
 };
 
-// UI Helpers
-function renderEmptyState(id, msg) {
+window.renderEmptyState = function(id, msg) {
   const el = document.getElementById(id);
   if (el) el.innerHTML = `<div style="text-align:center; padding:32px; color:var(--text-muted); opacity:0.8; font-size:13px;">${msg}</div>`;
-}
+};
 
-function clearFilters() {
+window.clearFilters = function() {
   const mList = document.getElementById("monthDropdownList");
   if(mList) {
     mList.querySelectorAll("input").forEach(i => i.checked = (i.value === "__ALL__"));
@@ -75,60 +220,11 @@ function clearFilters() {
   }
   
   if (typeof renderClub === 'function') renderClub();
-}
+};
 
-// DROPDOWN TOGGLE FUNCTIONS
-function toggleClubDropdown(e) { 
-  if(e) e.stopPropagation(); 
-  const cList = document.getElementById("clubDropdownList");
-  const cBtn = document.getElementById("clubDropdownBtn");
-  const mList = document.getElementById("monthDropdownList");
-  const mBtn = document.getElementById("monthDropdownBtn");
-
-  // Close Month
-  if(mList) mList.classList.remove("show");
-  if(mBtn) mBtn.classList.remove("active");
-
-  // Toggle Club
-  if(cList) cList.classList.toggle("show");
-  if(cBtn) cBtn.classList.toggle("active");
-}
-
-function toggleMonthDropdown(e) { 
-  if(e) e.stopPropagation(); 
-  const cList = document.getElementById("clubDropdownList");
-  const cBtn = document.getElementById("clubDropdownBtn");
-  const mList = document.getElementById("monthDropdownList");
-  const mBtn = document.getElementById("monthDropdownBtn");
-
-  // Close Club
-  if(cList) cList.classList.remove("show");
-  if(cBtn) cBtn.classList.remove("active");
-
-  // Toggle Month
-  if(mList) mList.classList.toggle("show");
-  if(mBtn) mBtn.classList.toggle("active");
-}
-
-// CLOSE ON CLICK OUTSIDE
-window.addEventListener('click', e => {
-  const dropdowns = [
-    { list: document.getElementById("clubDropdownList"), btn: document.getElementById("clubDropdownBtn") },
-    { list: document.getElementById("monthDropdownList"), btn: document.getElementById("monthDropdownBtn") }
-  ];
-
-  dropdowns.forEach(({list, btn}) => {
-    if (list && list.classList.contains('show') && !list.contains(e.target) && !btn.contains(e.target)) {
-      list.classList.remove('show');
-      btn.classList.remove('active');
-    }
-  });
-});
-
-// Setup & Navigation
 window.setupGlobalYear = function() {
   const sel = document.getElementById("yearSelect");
-  if (!sel) return;
+  if (!sel || !window.ST || !window.ST.data) return;
   const years = new Set(window.ST.data.map(r => isNaN(r.dateParsed) ? null : r.dateParsed.getFullYear()).filter(Boolean));
   years.add(2025); years.add(2026);
   const sorted = [...years].sort((a,b)=>b-a);
@@ -139,9 +235,10 @@ window.setupGlobalYear = function() {
 };
 
 window.updateDashboard = function() {
+  if(!window.ST || !window.ST.data) return;
   const yr = document.getElementById("yearSelect")?.value || "all";
   
-  // 1. Filter Data
+  // Filter Data
   window.ST.filtered = window.ST.data.filter(r => {
     if (yr === "all") return true;
     const d = r.dateParsed;
@@ -149,71 +246,22 @@ window.updateDashboard = function() {
     return true;
   });
 
-  // 2. Generate Months (Descending)
+  // Generate Months (Descending)
   window.ST.months = [...new Set(window.ST.filtered.map(r => 
-    isNaN(r.dateParsed) ? null : window.monthKey(r.dateParsed)
+    isNaN(r.dateParsed) ? null : (typeof window.monthKey === 'function' ? window.monthKey(r.dateParsed) : null)
   ).filter(Boolean))].sort().reverse(); 
   
-  // 3. Reset Filters
+  // Reset Filters
   const clubList = document.getElementById("clubDropdownList");
   if(clubList) clubList.innerHTML = "";
   
   const monthList = document.getElementById("monthDropdownList");
   if(monthList) monthList.innerHTML = "";
   
-  const active = document.querySelector(".tab-content.active");
-  if (active) openTab(active.id);
+  // Re-trigger the active tab render
+  const activeTab = document.querySelector(".tab-content.active");
+  if (activeTab) {
+    const tabBtn = document.querySelector(`.tab-button[data-tab="${activeTab.id}"]`);
+    if(tabBtn) tabBtn.click();
+  }
 };
-
-function openTab(tab) {
-  document.querySelectorAll(".tab-content").forEach(t => t.classList.remove("active"));
-  document.querySelectorAll(".tab-button").forEach(b => b.classList.remove("active"));
-  document.getElementById(tab)?.classList.add("active");
-  document.querySelector(`button[onclick="openTab('${tab}')"]`)?.classList.add("active");
-
-  if (!window.ST.loaded) return; 
-  if (tab === "current" && typeof renderCurrent === 'function') renderCurrent(window.ST.filtered);
-  if (tab === "clubInsights" && typeof renderClub === 'function') renderClub();
-  if (tab === "employerPaid" && typeof renderEmployer === 'function') renderEmployer();
-  if (tab === "active" && typeof renderPartners === 'function') renderPartners();
-  
-  if (typeof resizeCharts === 'function') requestAnimationFrame(resizeCharts);
-}
-
-// Initialization
-document.addEventListener("DOMContentLoaded", () => {
-  const themeBtn = document.getElementById("themeToggle");
-  const themeText = document.getElementById("themeText");
-  const themeIcon = document.getElementById("themeIcon");
-
-  const moonIcon = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
-  const sunIcon = '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>';
-
-  function updateThemeUI() {
-    const isDark = document.body.classList.contains("dark");
-    if(themeText) themeText.textContent = isDark ? "Light Mode" : "Dark Mode";
-    if(themeIcon) themeIcon.innerHTML = isDark ? sunIcon : moonIcon;
-  }
-
-  if (localStorage.getItem("theme") === "dark") {
-    document.body.classList.add("dark");
-  }
-  updateThemeUI();
-
-  if(themeBtn) {
-    themeBtn.onclick = () => {
-      document.body.classList.toggle("dark");
-      localStorage.setItem("theme", document.body.classList.contains("dark") ? "dark" : "light");
-      updateThemeUI();
-      if (typeof window.updateDashboard === 'function') window.updateDashboard();
-    };
-  }
-
-  if (typeof window.loadData === 'function') window.loadData();
-  
-  let timer;
-  window.addEventListener("resize", () => {
-    clearTimeout(timer);
-    timer = setTimeout(() => { if(window.resizeCharts) window.resizeCharts(); }, 150);
-  });
-});
